@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <h2 class="dashboard-title">Test Parse Duration</h2>
+
+    <div class="nested-card">
+        <h3>Testing with different formats</h3>
+        
+        <div class="test-results">
+            <p>1 hour: {{ "1 hour"|parse_duration }}</p>
+            <p>2hours: {{ "2hours"|parse_duration }}</p>
+            <p>3days: {{ "3days"|parse_duration }}</p>
+            <p>24: {{ "24"|parse_duration }}</p>
+            <p>Empty: {{ ""|parse_duration }}</p>
+            <p>None: {{ none|parse_duration }}</p>
+            <p>Malformed: {{ "abc"|parse_duration }}</p>
+            <p>1hr: {{ "1hr"|parse_duration }}</p>
+            <p>30min: {{ "30min"|parse_duration }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,449 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="tutorial-container">
+    <div class="dashboard-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 class="dashboard-title">Welcome to PEER!</h2>
+            <button id="skip-tutorial-btn" class="btn-secondary">Skip Tutorial</button>
+        </div>
+        
+        <div id="tutorial-progress" class="tutorial-progress">
+            <div class="progress-step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-label">Getting Started</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-label">Buyer Guide</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-label">Seller Guide</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="4">
+                <div class="step-number">4</div>
+                <div class="step-label">Communication</div>
+            </div>
+            <div class="progress-line"></div>
+            <div class="progress-step" data-step="5">
+                <div class="step-number">5</div>
+                <div class="step-label">Finish</div>
+            </div>
+        </div>
+        
+        <!-- Tutorial steps content -->
+        <div class="tutorial-content">
+            <!-- Step 1: Getting Started -->
+            <div class="tutorial-step active" data-step="1">
+                <h3>Getting Started with PEER</h3>
+                
+                <div class="tutorial-grid">
+                    <div class="tutorial-image">
+                        <img src="{{ url_for('static', filename='img/tutorial/dashboard.png') }}" alt="Dashboard" onerror="this.src='https://via.placeholder.com/400x300?text=Dashboard+Screenshot'">
+                    </div>
+                    <div class="tutorial-info">
+                        <h4>Your Dashboard</h4>
+                        <p>The dashboard is your central hub for all activities on PEER. From here, you can:</p>
+                        <ul>
+                            <li>Switch between buyer and seller modes</li>
+                            <li>View your transaction history</li>
+                            <li>Access your wallet</li>
+                            <li>Manage your profile</li>
+                        </ul>
+                        <p>PEER gives you complete control over your transactions with secure, end-to-end encrypted communications and non-custodial wallet management.</p>
+                    </div>
+                </div>
+                
+                <div class="tutorial-tip">
+                    <div class="tip-icon"><i class="fas fa-lightbulb"></i></div>
+                    <div class="tip-content">
+                        <h5>Pro Tip</h5>
+                        <p>Customize your notification settings to get alerts for new listings, messages, and updates on your orders.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 2: Buyer Guide -->
+            <div class="tutorial-step" data-step="2">
+                <h3>Buyer's Guide</h3>
+                
+                <div class="tutorial-grid">
+                    <div class="tutorial-image">
+                        <img src="{{ url_for('static', filename='img/tutorial/buyer.png') }}" alt="Buyer Features" onerror="this.src='https://via.placeholder.com/400x300?text=Buyer+Features'">
+                    </div>
+                    <div class="tutorial-info">
+                        <h4>Finding and Purchasing Products/Services</h4>
+                        <p>As a buyer, you have powerful tools to find exactly what you need:</p>
+                        <ul>
+                            <li><strong>Search & Filters:</strong> Use filters for price, location, payment method, and category</li>
+                            <li><strong>Auto-Refresh:</strong> See new listings as they're posted in real-time</li>
+                            <li><strong>Secure Payments:</strong> Choose from multiple payment methods</li>
+                            <li><strong>Direct Communication:</strong> Chat with sellers to negotiate or ask questions</li>
+                            <li><strong>Order Tracking:</strong> Follow the status of your purchases</li>
+                            <li><strong>Dispute Resolution:</strong> Raise issues if something doesn't go as planned</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="tutorial-tip">
+                    <div class="tip-icon"><i class="fas fa-lightbulb"></i></div>
+                    <div class="tip-content">
+                        <h5>Pro Tip</h5>
+                        <p>Check seller ratings and reviews before making a purchase. High-rated sellers with verified badges are often the most reliable.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 3: Seller Guide -->
+            <div class="tutorial-step" data-step="3">
+                <h3>Seller's Guide</h3>
+                
+                <div class="tutorial-grid">
+                    <div class="tutorial-image">
+                        <img src="{{ url_for('static', filename='img/tutorial/seller.png') }}" alt="Seller Features" onerror="this.src='https://via.placeholder.com/400x300?text=Seller+Features'">
+                    </div>
+                    <div class="tutorial-info">
+                        <h4>Creating and Managing Listings</h4>
+                        <p>As a seller, you have powerful tools to showcase your products or services:</p>
+                        <ul>
+                            <li><strong>Quick Posting:</strong> Create listings in seconds</li>
+                            <li><strong>AI-Suggested Descriptions:</strong> Get help writing compelling product descriptions</li>
+                            <li><strong>Draft Mode:</strong> Save unfinished listings to complete later</li>
+                            <li><strong>Scheduled Posting:</strong> Set future posting times</li>
+                            <li><strong>Limited-Time Offers:</strong> Create time-based discounts or flash sales</li>
+                            <li><strong>Listing Promotion:</strong> Boost listings to appear at the top of search results</li>
+                            <li><strong>Bulk Upload:</strong> Add multiple products at once</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="tutorial-tip">
+                    <div class="tip-icon"><i class="fas fa-lightbulb"></i></div>
+                    <div class="tip-content">
+                        <h5>Pro Tip</h5>
+                        <p>Add your location to listings to help buyers find local products and services more easily.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 4: Communication -->
+            <div class="tutorial-step" data-step="4">
+                <h3>Communication Tools</h3>
+                
+                <div class="tutorial-grid">
+                    <div class="tutorial-image">
+                        <img src="{{ url_for('static', filename='img/tutorial/chat.png') }}" alt="Chat Features" onerror="this.src='https://via.placeholder.com/400x300?text=Communication+Features'">
+                    </div>
+                    <div class="tutorial-info">
+                        <h4>Messaging and Notifications</h4>
+                        <p>PEER provides secure, end-to-end encrypted communication:</p>
+                        <ul>
+                            <li><strong>Private Chat:</strong> Direct messaging between buyers and sellers</li>
+                            <li><strong>Read Receipts:</strong> Know when messages are read</li>
+                            <li><strong>Typing Indicators:</strong> See when the other person is typing</li>
+                            <li><strong>Message Templates:</strong> Quick responses for common questions</li>
+                            <li><strong>File Sharing:</strong> Send images and documents securely</li>
+                            <li><strong>Real-time Notifications:</strong> Get alerted to new messages</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="tutorial-tip">
+                    <div class="tip-icon"><i class="fas fa-lightbulb"></i></div>
+                    <div class="tip-content">
+                        <h5>Pro Tip</h5>
+                        <p>Always keep communication within PEER's platform to ensure your conversations are secure and protected.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Step 5: Finish -->
+            <div class="tutorial-step" data-step="5">
+                <h3>You're Ready to Go!</h3>
+                
+                <div style="text-align: center; padding: 2rem;">
+                    <div style="font-size: 5rem; margin-bottom: 1.5rem; color: var(--primary-color);">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <h4 style="margin-bottom: 1.5rem;">Congratulations!</h4>
+                    <p style="max-width: 600px; margin: 0 auto 2rem auto;">You've completed the PEER tutorial and are ready to start buying and selling. Remember, our support team is always available if you have any questions.</p>
+                    
+                    <div style="margin-bottom: 2rem;">
+                        <h5 style="margin-bottom: 1rem;">What would you like to do now?</h5>
+                        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+                            <a href="{{ url_for('buyer_dashboard') }}" class="btn btn-primary">Browse as Buyer</a>
+                            <a href="{{ url_for('seller_dashboard') }}" class="btn btn-secondary">Sell Something</a>
+                            <a href="{{ url_for('wallet_dashboard') }}" class="btn btn-secondary">Setup Wallet</a>
+                        </div>
+                    </div>
+                    
+                    <div class="form-check" style="display: inline-block;">
+                        <input type="checkbox" id="dont-show-again" class="form-check-input">
+                        <label for="dont-show-again" class="form-check-label">Don't show the tutorial again</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tutorial-navigation">
+            <button id="prev-btn" class="btn-secondary" disabled>Previous</button>
+            <button id="next-btn" class="btn-primary">Next</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const progressSteps = document.querySelectorAll('.progress-step');
+        const tutorialSteps = document.querySelectorAll('.tutorial-step');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const skipBtn = document.getElementById('skip-tutorial-btn');
+        const dontShowAgain = document.getElementById('dont-show-again');
+        
+        let currentStep = 1;
+        const totalSteps = progressSteps.length;
+        
+        // Update UI based on current step
+        function updateUI() {
+            // Update progress indicators
+            progressSteps.forEach(step => {
+                const stepNumber = parseInt(step.getAttribute('data-step'));
+                if (stepNumber < currentStep) {
+                    step.classList.add('completed');
+                    step.classList.remove('active');
+                } else if (stepNumber === currentStep) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active', 'completed');
+                }
+            });
+            
+            // Update content visibility
+            tutorialSteps.forEach(step => {
+                const stepNumber = parseInt(step.getAttribute('data-step'));
+                if (stepNumber === currentStep) {
+                    step.classList.add('active');
+                } else {
+                    step.classList.remove('active');
+                }
+            });
+            
+            // Update buttons
+            prevBtn.disabled = currentStep === 1;
+            if (currentStep === totalSteps) {
+                nextBtn.textContent = 'Finish';
+            } else {
+                nextBtn.textContent = 'Next';
+            }
+        }
+        
+        // Move to the next step
+        function nextStep() {
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateUI();
+            } else {
+                finishTutorial();
+            }
+        }
+        
+        // Move to the previous step
+        function prevStep() {
+            if (currentStep > 1) {
+                currentStep--;
+                updateUI();
+            }
+        }
+        
+        // Progress step click
+        progressSteps.forEach(step => {
+            step.addEventListener('click', function() {
+                const stepNumber = parseInt(this.getAttribute('data-step'));
+                currentStep = stepNumber;
+                updateUI();
+            });
+        });
+        
+        // Button click handlers
+        if (prevBtn) prevBtn.addEventListener('click', prevStep);
+        if (nextBtn) nextBtn.addEventListener('click', nextStep);
+        
+        // Skip tutorial
+        function skipTutorial() {
+            const shouldSkipPermanently = dontShowAgain && dontShowAgain.checked;
+            
+            if (shouldSkipPermanently) {
+                // In a real app, this would save a user preference to the database
+                localStorage.setItem('skipTutorial', 'true');
+            }
+            
+            // Redirect to dashboard
+            window.location.href = "{{ url_for('buyer_dashboard') }}";
+        }
+        
+        // Finish tutorial
+        function finishTutorial() {
+            const shouldSkipPermanently = dontShowAgain && dontShowAgain.checked;
+            
+            if (shouldSkipPermanently) {
+                // In a real app, this would save a user preference to the database
+                localStorage.setItem('skipTutorial', 'true');
+            }
+            
+            // Redirect to dashboard
+            window.location.href = "{{ url_for('buyer_dashboard') }}";
+        }
+        
+        if (skipBtn) skipBtn.addEventListener('click', skipTutorial);
+    });
+</script>
+
+<style>
+    .tutorial-container {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+    
+    .tutorial-progress {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 3rem;
+    }
+    
+    .progress-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        border: 2px solid transparent;
+        transition: all 0.3s ease;
+    }
+    
+    .step-label {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        text-align: center;
+        transition: color 0.3s ease;
+    }
+    
+    .progress-step.active .step-number {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        transform: scale(1.1);
+    }
+    
+    .progress-step.active .step-label {
+        color: white;
+        font-weight: bold;
+    }
+    
+    .progress-step.completed .step-number {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+    
+    .progress-line {
+        flex-grow: 1;
+        height: 2px;
+        background-color: rgba(255, 255, 255, 0.1);
+        z-index: 0;
+        position: relative;
+    }
+    
+    .tutorial-step {
+        display: none;
+        animation: fadeIn 0.5s ease;
+    }
+    
+    .tutorial-step.active {
+        display: block;
+    }
+    
+    .tutorial-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin: 2rem 0;
+    }
+    
+    @media (max-width: 768px) {
+        .tutorial-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .tutorial-image {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .tutorial-image img {
+        max-width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    
+    .tutorial-info ul {
+        margin: 1rem 0;
+        padding-left: 1.5rem;
+    }
+    
+    .tutorial-info li {
+        margin-bottom: 0.5rem;
+    }
+    
+    .tutorial-tip {
+        display: flex;
+        background-color: rgba(100, 182, 255, 0.1);
+        border-left: 4px solid var(--primary-color);
+        padding: 1rem;
+        border-radius: 0 8px 8px 0;
+        margin: 2rem 0;
+    }
+    
+    .tip-icon {
+        font-size: 1.5rem;
+        color: var(--primary-color);
+        margin-right: 1rem;
+    }
+    
+    .tip-content h5 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+    }
+    
+    .tutorial-navigation {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 3rem;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+{% endblock %} 

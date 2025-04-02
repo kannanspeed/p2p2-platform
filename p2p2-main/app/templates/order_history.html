@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <h2 class="dashboard-title">Order History</h2>
+    
+    <div style="margin-top: 2rem;">
+        <h3 class="section-title">Orders as Buyer</h3>
+        
+        {% if buyer_orders %}
+            <div class="grid">
+                {% for order in buyer_orders %}
+                    <div class="post-item">
+                        <span class="status-tag" style="background-color: 
+                            {% if order.status == 'completed' %}var(--success-color)
+                            {% elif order.status == 'canceled' %}var(--danger-color)
+                            {% elif order.status == 'disputed' %}#f59f00
+                            {% else %}var(--secondary-color){% endif %}">
+                            {{ order.status.capitalize() }}
+                        </span>
+                        <h3 class="post-title">{{ order.post.title }}</h3>
+                        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Type:</strong> {{ order.post.post_type.capitalize() }}</p>
+                        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Timeline:</strong> {{ order.timeline_selected }}</p>
+                        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Seller:</strong> {{ order.post.seller.username }}</p>
+                        <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 1rem;">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn-view-details">View Details</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>You haven't placed any orders yet.</p>
+                <a href="{{ url_for('buyer_dashboard') }}" class="btn-create-post" style="margin-top: 1rem;">Browse Products</a>
+            </div>
+        {% endif %}
+    </div>
+    
+    <div style="margin-top: 3rem;">
+        <h3 class="section-title">Orders as Seller</h3>
+        
+        {% if seller_orders %}
+            <div class="grid">
+                {% for order in seller_orders %}
+                    <div class="post-item">
+                        <span class="status-tag" style="background-color: 
+                            {% if order.status == 'completed' %}var(--success-color)
+                            {% elif order.status == 'canceled' %}var(--danger-color)
+                            {% elif order.status == 'disputed' %}#f59f00
+                            {% else %}var(--secondary-color){% endif %}">
+                            {{ order.status.capitalize() }}
+                        </span>
+                        <h3 class="post-title">{{ order.post.title }}</h3>
+                        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Type:</strong> {{ order.post.post_type.capitalize() }}</p>
+                        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Timeline:</strong> {{ order.timeline_selected }}</p>
+                        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Buyer:</strong> {{ order.buyer.username }}</p>
+                        <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 1rem;">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                        <div style="text-align: center; margin-top: 1rem;">
+                            <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn-view-details">View Details</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>You haven't received any orders yet.</p>
+                <a href="{{ url_for('seller_dashboard') }}" class="btn-create-post" style="margin-top: 1rem;">Manage Posts</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

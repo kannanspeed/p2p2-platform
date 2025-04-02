@@ -1,0 +1,392 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">Search Results for "{{ query }}"</h2>
+    
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <button id="filter-toggle-btn" class="btn-secondary">
+            <i class="fas fa-filter" style="margin-right: 0.5rem;"></i> Filters
+        </button>
+        
+        <div id="filters-container" style="display: none; margin-top: 1rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+                <!-- Price Range Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Price Range</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="number" id="price-min" placeholder="Min" class="filter-input" min="0">
+                        <span>-</span>
+                        <input type="number" id="price-max" placeholder="Max" class="filter-input" min="0">
+                    </div>
+                </div>
+                
+                <!-- Location Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Location</label>
+                    <input type="text" id="location-filter" placeholder="City, Region, etc." class="filter-input">
+                </div>
+                
+                <!-- Payment Method Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Payment Method</label>
+                    <select id="payment-filter" class="filter-input">
+                        <option value="">All Methods</option>
+                        <option value="cash">Cash</option>
+                        <option value="bank">Bank Transfer</option>
+                        <option value="upi">UPI</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <!-- Category Filter -->
+                <div class="filter-group">
+                    <label class="filter-label">Category</label>
+                    <select id="category-filter" class="filter-input">
+                        <option value="">All Categories</option>
+                        <option value="product">Products</option>
+                        <option value="service">Services</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: center; margin-top: 1rem;">
+                <button id="apply-filters-btn" class="btn-primary">Apply Filters</button>
+                <button id="reset-filters-btn" class="btn-secondary" style="margin-left: 1rem;">Reset</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Auto-refresh control -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0;">
+        <div>
+            {% if posts %}
+                <p>Found <span id="results-count">{{ posts|length }}</span> result(s)</p>
+            {% endif %}
+        </div>
+        <div style="display: flex; align-items: center;">
+            <div class="form-check" style="margin-right: 1rem;">
+                <input type="checkbox" id="auto-refresh" class="form-check-input" checked>
+                <label for="auto-refresh" class="form-check-label">Auto-refresh</label>
+            </div>
+            <span id="refresh-countdown" style="margin-right: 0.5rem; color: var(--secondary-color);">30s</span>
+            <button id="refresh-now-btn" class="btn-secondary btn-sm">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
+    </div>
+    
+    {% if posts %}
+        <div id="posts-container" class="grid">
+            {% for post in posts %}
+                <div class="post-item" 
+                     data-price="{{ post.price }}" 
+                     data-location="{{ post.location }}" 
+                     data-payment="{{ post.payment_method }}" 
+                     data-category="{{ post.post_type }}">
+                    {% if post.boost_listing %}
+                        <span class="boosted-tag">BOOSTED</span>
+                    {% endif %}
+                    <span class="post-type">{{ post.post_type.capitalize() }}</span>
+                    <h3 class="post-title">{{ post.title }}</h3>
+                    <p class="post-desc">{{ post.description[:100] }}{% if post.description|length > 100 %}...{% endif %}</p>
+                    <p><strong>Price:</strong> ${{ post.price }}</p>
+                    {% if post.location %}
+                        <p><strong>Location:</strong> {{ post.location }}</p>
+                    {% endif %}
+                    <p><strong>Payment:</strong> 
+                        {% if post.payment_method == 'other' %}
+                            {{ post.custom_payment }}
+                        {% else %}
+                            {{ post.payment_method.capitalize() }}
+                        {% endif %}
+                    </p>
+                    <p><small>Posted by: {{ post.seller.username }}</small></p>
+                    <p><small>{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</small></p>
+                    <div style="text-align: center; margin-top: 1rem;">
+                        <a href="{{ url_for('post_detail', post_id=post.id) }}" class="btn btn-primary">View Details</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div id="no-results" style="text-align: center; padding: 3rem 0;">
+            <i class="fas fa-search" style="font-size: 3rem; color: var(--gray-color); margin-bottom: 1rem;"></i>
+            <p>No results found for "{{ query }}".</p>
+            <p style="margin-top: 1rem;">Try different keywords or browse all available listings.</p>
+            <a href="{{ url_for('buyer_dashboard') }}" class="btn btn-primary" style="margin-top: 1rem;">Browse All</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter toggle functionality
+        const filterToggleBtn = document.getElementById('filter-toggle-btn');
+        const filtersContainer = document.getElementById('filters-container');
+        
+        filterToggleBtn.addEventListener('click', function() {
+            if (filtersContainer.style.display === 'none') {
+                filtersContainer.style.display = 'block';
+                filterToggleBtn.innerHTML = '<i class="fas fa-times" style="margin-right: 0.5rem;"></i> Close Filters';
+            } else {
+                filtersContainer.style.display = 'none';
+                filterToggleBtn.innerHTML = '<i class="fas fa-filter" style="margin-right: 0.5rem;"></i> Filters';
+            }
+        });
+        
+        // Filter application
+        const applyFiltersBtn = document.getElementById('apply-filters-btn');
+        const resetFiltersBtn = document.getElementById('reset-filters-btn');
+        const priceMin = document.getElementById('price-min');
+        const priceMax = document.getElementById('price-max');
+        const locationFilter = document.getElementById('location-filter');
+        const paymentFilter = document.getElementById('payment-filter');
+        const categoryFilter = document.getElementById('category-filter');
+        const postsContainer = document.getElementById('posts-container');
+        const noResults = document.getElementById('no-results');
+        const resultsCount = document.getElementById('results-count');
+        
+        function applyFilters() {
+            const minPrice = priceMin.value !== '' ? parseFloat(priceMin.value) : 0;
+            const maxPrice = priceMax.value !== '' ? parseFloat(priceMax.value) : Infinity;
+            const location = locationFilter.value.toLowerCase();
+            const payment = paymentFilter.value.toLowerCase();
+            const category = categoryFilter.value.toLowerCase();
+            
+            let visibleCount = 0;
+            
+            // Get all post items
+            const posts = document.querySelectorAll('.post-item');
+            
+            posts.forEach(post => {
+                const postPrice = parseFloat(post.getAttribute('data-price') || 0);
+                const postLocation = (post.getAttribute('data-location') || '').toLowerCase();
+                const postPayment = (post.getAttribute('data-payment') || '').toLowerCase();
+                const postCategory = (post.getAttribute('data-category') || '').toLowerCase();
+                
+                let shouldShow = true;
+                
+                // Check price range
+                if (postPrice < minPrice || postPrice > maxPrice) {
+                    shouldShow = false;
+                }
+                
+                // Check location
+                if (location !== '' && !postLocation.includes(location)) {
+                    shouldShow = false;
+                }
+                
+                // Check payment method
+                if (payment !== '' && postPayment !== payment) {
+                    shouldShow = false;
+                }
+                
+                // Check category
+                if (category !== '' && postCategory !== category) {
+                    shouldShow = false;
+                }
+                
+                // Show or hide post
+                if (shouldShow) {
+                    post.style.display = '';
+                    visibleCount++;
+                } else {
+                    post.style.display = 'none';
+                }
+            });
+            
+            // Update results count
+            if (resultsCount) {
+                resultsCount.textContent = visibleCount;
+            }
+            
+            // Show no results message if needed
+            if (postsContainer && noResults) {
+                if (visibleCount === 0) {
+                    postsContainer.style.display = 'none';
+                    noResults.style.display = 'block';
+                } else {
+                    postsContainer.style.display = 'grid';
+                    noResults.style.display = 'none';
+                }
+            }
+        }
+        
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', applyFilters);
+        }
+        
+        function resetFilters() {
+            priceMin.value = '';
+            priceMax.value = '';
+            locationFilter.value = '';
+            paymentFilter.value = '';
+            categoryFilter.value = '';
+            
+            // Show all posts
+            const posts = document.querySelectorAll('.post-item');
+            posts.forEach(post => {
+                post.style.display = '';
+            });
+            
+            // Update results count
+            if (resultsCount) {
+                resultsCount.textContent = posts.length;
+            }
+            
+            // Show posts container, hide no results
+            if (postsContainer && noResults) {
+                postsContainer.style.display = 'grid';
+                noResults.style.display = 'none';
+            }
+        }
+        
+        if (resetFiltersBtn) {
+            resetFiltersBtn.addEventListener('click', resetFilters);
+        }
+        
+        // Auto-refresh functionality
+        const autoRefreshCheckbox = document.getElementById('auto-refresh');
+        const refreshCountdownSpan = document.getElementById('refresh-countdown');
+        const refreshNowBtn = document.getElementById('refresh-now-btn');
+        
+        let countdownInterval;
+        let secondsLeft = 30;
+        
+        function startCountdown() {
+            clearInterval(countdownInterval);
+            secondsLeft = 30;
+            updateCountdownDisplay();
+            
+            countdownInterval = setInterval(() => {
+                secondsLeft--;
+                updateCountdownDisplay();
+                
+                if (secondsLeft <= 0) {
+                    refreshListings();
+                }
+            }, 1000);
+        }
+        
+        function updateCountdownDisplay() {
+            if (refreshCountdownSpan) {
+                refreshCountdownSpan.textContent = secondsLeft + 's';
+            }
+        }
+        
+        function stopCountdown() {
+            clearInterval(countdownInterval);
+            if (refreshCountdownSpan) {
+                refreshCountdownSpan.textContent = 'Off';
+            }
+        }
+        
+        function refreshListings() {
+            // Add spinner to refresh button
+            if (refreshNowBtn) {
+                refreshNowBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            }
+            
+            // In a real application, this would be an AJAX call to get new listings
+            // For now, we'll simulate a refresh with a timeout
+            setTimeout(() => {
+                console.log('Listings refreshed');
+                
+                // Reset refresh button
+                if (refreshNowBtn) {
+                    refreshNowBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+                }
+                
+                // Restart countdown if auto-refresh is on
+                if (autoRefreshCheckbox && autoRefreshCheckbox.checked) {
+                    startCountdown();
+                }
+            }, 1000);
+        }
+        
+        if (autoRefreshCheckbox) {
+            // Initialize countdown on page load if auto-refresh is checked
+            if (autoRefreshCheckbox.checked) {
+                startCountdown();
+            } else {
+                stopCountdown();
+            }
+            
+            // Toggle countdown when checkbox changes
+            autoRefreshCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    startCountdown();
+                } else {
+                    stopCountdown();
+                }
+            });
+        }
+        
+        if (refreshNowBtn) {
+            refreshNowBtn.addEventListener('click', function() {
+                refreshListings();
+            });
+        }
+    });
+</script>
+
+<style>
+    .filters-section {
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+    }
+    
+    .filter-group {
+        margin-bottom: 1rem;
+    }
+    
+    .filter-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: white;
+    }
+    
+    .filter-input {
+        width: 100%;
+        padding: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        color: white;
+    }
+    
+    .filter-input::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .boosted-tag {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: #FF6B00;
+        color: white;
+        padding: 0.3rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .post-item {
+        position: relative;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+</style>
+{% endblock %} 

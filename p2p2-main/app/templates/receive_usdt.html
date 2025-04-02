@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="card">
+    <h2 class="card-title">Receive USDT</h2>
+    
+    <div class="wallet-receive-info">
+        <p>Share your wallet address to receive USDT (BEP20) from other users.</p>
+        <div class="qr-container">
+            <div id="qrcode" class="wallet-qr"></div>
+        </div>
+        
+        <div class="address-container">
+            <h3>Your BEP20 Wallet Address</h3>
+            <div class="address-box">
+                <code class="wallet-address">{{ wallet.address }}</code>
+                <button class="btn btn-secondary btn-sm copy-btn" data-clipboard-text="{{ wallet.address }}">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+            </div>
+        </div>
+        
+        <div class="receive-warning">
+            <p><i class="fas fa-exclamation-triangle"></i> Important:</p>
+            <ul>
+                <li>Only receive USDT tokens on the Binance Smart Chain (BEP20)</li>
+                <li>Sending other assets to this address may result in permanent loss</li>
+                <li>Transactions typically complete within 1-5 minutes</li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="form-actions text-center" style="margin-top: 2rem;">
+        <a href="{{ url_for('wallet_dashboard') }}" class="btn btn-primary">Back to Wallet</a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize clipboard.js
+        new ClipboardJS('.copy-btn');
+        
+        // Add copy button functionality
+        const copyBtn = document.querySelector('.copy-btn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                
+                setTimeout(function() {
+                    copyBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+        
+        // Generate QR code
+        const qrContainer = document.getElementById('qrcode');
+        if (qrContainer) {
+            // Create QR code
+            const walletAddress = "{{ wallet.address }}";
+            const qr = qrcode(0, 'M');
+            qr.addData(walletAddress);
+            qr.make();
+            
+            // Render QR code
+            qrContainer.innerHTML = qr.createImgTag(5, 10);
+        }
+    });
+</script>
+{% endblock %} 

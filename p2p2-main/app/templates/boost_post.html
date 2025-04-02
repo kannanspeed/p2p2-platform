@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <h2 class="dashboard-title">Boost Your Listing</h2>
+    
+    <div class="nested-card" style="margin-bottom: 2rem; padding: 1.5rem; background-color: rgba(255, 107, 0, 0.1); border: 1px solid rgba(255, 107, 0, 0.3);">
+        <h3 style="margin-top: 0; color: #FF6B00;">
+            <i class="fas fa-rocket" style="margin-right: 0.5rem;"></i> Premium Listing - 10 USDT
+        </h3>
+        
+        <p style="color: rgba(255, 255, 255, 0.9);">
+            Boosting your listing will place it at the top of the buyers page for 7 days, giving it maximum visibility with an "Ad - Paid Promotion" tag.
+        </p>
+        
+        <ul style="color: rgba(255, 255, 255, 0.8); margin: 1.5rem 0;">
+            <li style="margin-bottom: 0.5rem;">✅ Premium placement at the top of search results</li>
+            <li style="margin-bottom: 0.5rem;">✅ Special visual styling to stand out</li>
+            <li style="margin-bottom: 0.5rem;">✅ "Ad - Paid Promotion" tag for authenticity</li>
+            <li>✅ 7 days of increased visibility</li>
+        </ul>
+    </div>
+    
+    <div class="nested-card" style="margin-bottom: 2rem;">
+        <h3 style="margin-top: 0; margin-bottom: 1rem;">Post Details</h3>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h4 style="margin: 0;">{{ post.title }}</h4>
+            {% if post.post_type == 'service' %}
+                <span class="tag-service">Service</span>
+            {% else %}
+                <span class="tag-product">Product</span>
+            {% endif %}
+        </div>
+        
+        <p>{{ post.description }}</p>
+        
+        <p><strong>Payment method:</strong> 
+            {% if post.payment_method == 'other' %}
+                {{ post.custom_payment }}
+            {% else %}
+                {{ post.payment_method.capitalize() }}
+            {% endif %}
+        </p>
+        
+        <p><strong>Created:</strong> {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    </div>
+    
+    <div class="nested-card">
+        <h3 style="margin-top: 0; margin-bottom: 1rem;">Payment Details</h3>
+        
+        <p><strong>Cost:</strong> 10 USDT</p>
+        <p><strong>Your wallet balance:</strong> {{ wallet.balance }} USDT</p>
+        <p><strong>Balance after payment:</strong> {{ (wallet.balance|float - 10)|round(2) }} USDT</p>
+        
+        {% if wallet.balance|float < 10 %}
+            <div style="background-color: rgba(255, 77, 77, 0.2); border: 1px solid rgba(255, 77, 77, 0.5); padding: 1rem; border-radius: 8px; margin: 1rem 0;">
+                <p style="color: #ff4d4d; margin: 0;">
+                    <i class="fas fa-exclamation-triangle" style="margin-right: 0.5rem;"></i>
+                    Insufficient funds. Please add more USDT to your wallet.
+                </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <a href="{{ url_for('wallet_dashboard') }}" class="btn-primary">
+                    <i class="fas fa-wallet" style="margin-right: 0.5rem;"></i> Add Funds
+                </a>
+                <a href="{{ url_for('seller_dashboard') }}" class="btn-secondary" style="margin-left: 1rem;">
+                    Cancel
+                </a>
+            </div>
+        {% else %}
+            <form method="POST" action="{{ url_for('process_boost', post_id=post.id) }}">
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button type="submit" class="btn-primary" style="background-color: #FF6B00;">
+                        <i class="fas fa-rocket" style="margin-right: 0.5rem;"></i> Confirm Boost (10 USDT)
+                    </button>
+                    <a href="{{ url_for('seller_dashboard') }}" class="btn-secondary" style="margin-left: 1rem;">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .nested-card {
+        background-color: rgba(30, 30, 50, 0.7);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %} 

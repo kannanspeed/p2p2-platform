@@ -1,0 +1,697 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="relative pt-32 pb-32 overflow-hidden min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <!-- New Label -->
+        <div class="flex justify-center mb-12">
+            <div class="animate-float" style="display: flex; align-items: center; gap: 8px; background-color: rgba(0,0,0,0.3); backdrop-filter: blur(10px); border-radius: 50px; padding: 8px 16px; margin-bottom: 48px; margin-left: auto; margin-right: auto; max-width: fit-content;">
+                <span style="background-color: #FF6B00; color: white; font-size: 12px; padding: 4px 8px; border-radius: 50px;">NEW</span>
+                <span style="color: white; font-size: 14px;">Peer-to-Peer Trading Platform</span>
+                <span style="color: white;">&rarr;</span>
+            </div>
+        </div>
+        
+        <!-- Main headline and 3D Globe -->
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2rem;">
+            <!-- Text content -->
+            <div style="flex: 1; min-width: 300px; max-width: 600px;">
+                <h1 style="font-size: 4rem; font-weight: bold; margin-bottom: 2rem; line-height: 1.2;">
+                    Peer-to-Peer Trading,
+                    <br>
+                    Simplified
+                </h1>
+                <p style="font-size: 1.5rem; margin-bottom: 3rem;">
+                    Buy & Sell Seamlessly with Full Control
+                </p>
+                
+                <!-- Call to action buttons -->
+                <div style="display: flex; flex-direction: column; gap: 1rem; align-items: flex-start; margin-bottom: 3rem;">
+                    <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                        {% if 'user_id' not in session %}
+                        <a href="{{ url_for('signup') }}" class="btn btn-primary" style="display: flex; align-items: center;">
+                            <span style="margin-right: 8px;">💻</span>
+                            Sign Up Now
+                        </a>
+                        <a href="{{ url_for('login') }}" class="btn btn-secondary" style="display: flex; align-items: center;">
+                            <span style="margin-right: 8px;">🔐</span>
+                            Login
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('buyer_dashboard') }}" class="btn btn-primary" style="display: flex; align-items: center;">
+                            <span style="margin-right: 8px;">💻</span>
+                            Dashboard
+                        </a>
+                        <a href="{{ url_for('wallet_dashboard') }}" class="btn btn-secondary" style="display: flex; align-items: center;">
+                            <span style="margin-right: 8px;">💰</span>
+                            Wallet
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 3D Globe Container -->
+            <div id="globe-container"></div>
+        </div>
+        
+        <!-- Floating Elements -->
+        <div style="position: absolute; top: 20%; right: 5%; z-index: -1;" class="floating-element">
+            <div style="width: 120px; height: 120px; background: linear-gradient(135deg, rgba(131, 103, 199, 0.5), rgba(100, 182, 255, 0.5)); border-radius: 24px; backdrop-filter: blur(5px); transform: rotate(10deg);"></div>
+        </div>
+        <div style="position: absolute; bottom: 15%; left: 10%; z-index: -1;" class="floating-element-reverse">
+            <div style="width: 150px; height: 150px; background: linear-gradient(135deg, rgba(67, 96, 223, 0.5), rgba(255, 107, 0, 0.3)); border-radius: 50%; backdrop-filter: blur(5px);"></div>
+        </div>
+        <div style="position: absolute; top: 40%; left: 15%; z-index: -1;" class="spinning-coin">
+            <div style="width: 80px; height: 80px; background: linear-gradient(45deg, #FFD700, #FFA500); border-radius: 50%;"></div>
+        </div>
+        <div style="position: absolute; bottom: 30%; right: 15%; z-index: -1;" class="spinning-coin-reverse">
+            <div style="width: 100px; height: 100px; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); background: linear-gradient(135deg, #64B6FF, #8367C7);"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Platform Features Section -->
+<div class="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
+    <div class="card" style="backdrop-filter: blur(15px); background-color: rgba(255, 255, 255, 0.05);">
+        <h2 style="font-size: 2.5rem; font-weight: bold; text-align: center; margin-bottom: 3rem;">🌍 Centralized & Secure</h2>
+        
+        <p style="text-align: center; max-width: 800px; margin: 0 auto; margin-bottom: 2rem;">
+            Trade with confidence using our open-source, non-custodial marketplace and wallet.
+        </p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+            <div class="card floating-element" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🔒</div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Secure Transactions</h3>
+                <p>All transactions are protected with military-grade encryption and multi-signature verification.</p>
+            </div>
+
+            <div class="card floating-element-slow" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🔎</div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Search Anything, Anytime</h3>
+                <p>Find exactly what you need with our smart search feature across all listings.</p>
+            </div>
+
+            <div class="card floating-element" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🌐</div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Global Marketplace</h3>
+                <p>Connect with buyers and sellers around the world without borders or limitations.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works Section -->
+<div class="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
+    <div class="card" style="backdrop-filter: blur(15px); background-color: rgba(255, 255, 255, 0.05);">
+        <h2 style="font-size: 2.5rem; font-weight: bold; text-align: center; margin-bottom: 3rem;">🚀 How It Works</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+            <div class="card floating-element" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">1️⃣</div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Choose Your Role</h3>
+                <p>Enter the app and select Buyer or Seller.</p>
+            </div>
+            
+            <div class="card floating-element-slow" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">2️⃣</div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Post or Browse</h3>
+                <p>Sellers list products/services, and buyers browse & purchase.</p>
+            </div>
+            
+            <div class="card floating-element-reverse" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">3️⃣</div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Make a Deal</h3>
+                <p>Secure transactions, private chats, and real-time updates.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Buyers Section -->
+<div class="w-full px-4 py-20 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+        <div class="card" style="backdrop-filter: blur(15px); background-color: rgba(255, 255, 255, 0.05);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4rem; align-items: center;">
+                <div>
+                    <h2 style="font-size: 2.5rem; font-weight: bold; margin-bottom: 2rem;">🛍️ Buyers – Find What You Need</h2>
+                    <ul style="list-style-type: none; margin-bottom: 2rem;">
+                        <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                            <span>View real-time listings from sellers.</span>
+                        </li>
+                        <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                            <span>Small product previews, click for full details.</span>
+                        </li>
+                        <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                            <span>Choose the seller's preferred payment method: Cash, Bank Transfer, UPI, or Custom Payment.</span>
+                        </li>
+                        <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                            <span>Select delivery timelines: Instant, 10 mins, 1hr, 6hrs, 24hrs, or Custom.</span>
+                        </li>
+                        <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                            <span>Chat live with the seller after placing an order.</span>
+                        </li>
+                        <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                            <span>Track your order and view order history anytime.</span>
+                        </li>
+                        <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                            <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                            <span>Raise a dispute if any issue arises.</span>
+                        </li>
+                    </ul>
+                    {% if 'user_id' not in session %}
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary">Start Buying</a>
+                    {% else %}
+                    <a href="{{ url_for('buyer_dashboard') }}" class="btn btn-primary">Browse Listings</a>
+                    {% endif %}
+                </div>
+                
+                <div style="position: relative; min-height: 400px;">
+                    <!-- Decorative elements -->
+                    <div class="floating-element" style="position: absolute; top: 20%; left: 10%; background: linear-gradient(135deg, rgba(131, 103, 199, 0.5), rgba(100, 182, 255, 0.5)); width: 150px; height: 150px; border-radius: 20px; transform: rotate(-15deg);"></div>
+                    <div class="floating-element-reverse" style="position: absolute; bottom: 10%; right: 10%; background: linear-gradient(135deg, rgba(67, 96, 223, 0.5), rgba(255, 107, 0, 0.3)); width: 120px; height: 120px; border-radius: 50%;"></div>
+                    <div class="spinning-coin" style="position: absolute; top: 30%; right: 20%; width: 100px; height: 100px;">
+                        <div style="width: 100%; height: 100%; background: linear-gradient(45deg, #FFD700, #FFA500); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: white;">₿</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sellers Section -->
+<div class="w-full py-20">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="card" style="backdrop-filter: blur(15px); background-color: rgba(255, 255, 255, 0.05);">
+            <h2 style="font-size: 2.5rem; font-weight: bold; text-align: center; margin-bottom: 3rem;">📢 Sellers – List & Sell Easily</h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+                <div class="card" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Quick Posting</h3>
+                    <p>Post Products or Services in seconds.</p>
+                </div>
+                
+                <div class="card" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">💲</div>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Flexible Payments</h3>
+                    <p>Add product name, description (optional), price & payment method.</p>
+                </div>
+                
+                <div class="card" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🕓</div>
+                    <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Custom Timeline</h3>
+                    <p>Choose estimated delivery time options for buyers.</p>
+                </div>
+            </div>
+            
+            <div style="margin: 0 auto; max-width: 800px; text-align: center;">
+                <ul style="list-style-type: none; margin-bottom: 2rem; text-align: left;">
+                    <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                        <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                        <span>Set your preferred payment method: Cash, Bank Transfer, UPI, or Custom.</span>
+                    </li>
+                    <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                        <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                        <span>10-sec preview confirmation before final posting.</span>
+                    </li>
+                    <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                        <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                        <span>Get instant notifications when an order is placed.</span>
+                    </li>
+                    <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                        <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                        <span>Chat with buyers in real-time until the order is completed.</span>
+                    </li>
+                    <li style="display: flex; align-items: center; margin-bottom: 1rem;">
+                        <span style="margin-right: 1rem; color: #64B6FF; font-size: 1.5rem;">✓</span>
+                        <span>View full order history and manage your sales.</span>
+                    </li>
+                </ul>
+                
+                {% if 'user_id' not in session %}
+                <a href="{{ url_for('signup') }}" class="btn btn-primary">Start Selling</a>
+                {% else %}
+                <a href="{{ url_for('seller_dashboard') }}" class="btn btn-primary">Create Listing</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy & Security Section -->
+<div class="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
+    <div class="card" style="backdrop-filter: blur(15px); background-color: rgba(255, 255, 255, 0.05);">
+        <h2 style="font-size: 2.5rem; font-weight: bold; text-align: center; margin-bottom: 3rem;">🔐 Privacy & Security First</h2>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+            <div class="card floating-element" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">End-to-End Encryption</h3>
+                <p>No third-party access to your conversations.</p>
+            </div>
+
+            <div class="card floating-element-slow" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Anonymous Trading</h3>
+                <p>Share only what you choose.</p>
+            </div>
+
+            <div class="card floating-element" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">Non-Custodial</h3>
+                <p>You own your funds and private keys.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Final CTA Section -->
+<div class="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8 text-center">
+    <h2 style="font-size: 2.5rem; font-weight: bold; margin-bottom: 2rem;">📲 Join Now & Start Trading</h2>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+        <div class="card" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🚀</div>
+            <p>Sign Up / Log In in seconds with a modern, sleek design.</p>
+        </div>
+        
+        <div class="card" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
+            <p>Secure, live chat for seamless communication.</p>
+        </div>
+        
+        <div class="card" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+            <p>Transparent order tracking for both buyers and sellers.</p>
+        </div>
+        
+        <div class="card" style="text-align: center; backdrop-filter: blur(10px); background-color: rgba(255, 255, 255, 0.05);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
+            <p>Fast, mobile-friendly UI for a smooth experience.</p>
+        </div>
+    </div>
+    
+    <p style="max-width: 600px; margin: 0 auto; margin-bottom: 2rem; font-size: 1.2rem;">
+        Ready to trade? Start buying or selling now!
+    </p>
+    
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;">
+        {% if 'user_id' not in session %}
+        <a href="{{ url_for('signup') }}" class="btn btn-primary" style="display: flex; align-items: center;">
+            <span style="margin-right: 8px;">👋</span>
+            Sign Up Now
+        </a>
+        <a href="{{ url_for('login') }}" class="btn btn-secondary" style="display: flex; align-items: center;">
+            <span style="margin-right: 8px;">🔑</span>
+            Login
+        </a>
+        {% else %}
+        <a href="{{ url_for('buyer_dashboard') }}" class="btn btn-primary" style="display: flex; align-items: center;">
+            <span style="margin-right: 8px;">🚀</span>
+            Go to Dashboard
+        </a>
+        <a href="{{ url_for('wallet_dashboard') }}" class="btn btn-secondary" style="display: flex; align-items: center;">
+            <span style="margin-right: 8px;">💰</span>
+            Open Wallet
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Globe Visualization Script -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialization for 3D globe
+    setTimeout(() => {
+        initGlobe();
+    }, 300); // Longer delay to ensure DOM is fully ready
+});
+
+function initGlobe() {
+    const container = document.getElementById('globe-container');
+    if (!container) {
+        console.error('Globe container not found');
+        return;
+    }
+    
+    console.log('Initializing globe...');
+    
+    // Set up scene
+    const scene = new THREE.Scene();
+    
+    // Set up camera
+    const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+    camera.position.z = 200;
+    
+    // Set up renderer with alpha for transparency
+    const renderer = new THREE.WebGLRenderer({ 
+        alpha: true, 
+        antialias: true,
+        powerPreference: "high-performance" 
+    });
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    container.appendChild(renderer.domElement);
+    
+    // Create globe geometry
+    const globeRadius = 100;
+    const globeGeometry = new THREE.SphereGeometry(globeRadius, 64, 64);
+    
+    // First create a basic material as fallback
+    const basicMaterial = new THREE.MeshPhongMaterial({
+        color: 0x1a1a2e,
+        emissive: 0x112240,
+        specular: 0x333366,
+        shininess: 5,
+        transparent: true,
+        opacity: 0.9
+    });
+    
+    // Create globe mesh with basic material first
+    const globe = new THREE.Mesh(globeGeometry, basicMaterial);
+    scene.add(globe);
+    
+    // Several reliable Earth textures to try
+    const textureUrls = [
+        'https://unpkg.com/three-globe@2.24.10/example/img/earth-dark.jpg',
+        'https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_atmos_2048.jpg',
+        'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/land_ocean_ice_cloud_2048.jpg'
+    ];
+    
+    // Create earth map texture with better error handling
+    const loader = new THREE.TextureLoader();
+    
+    // Try loading each texture in sequence until one works
+    function tryLoadTexture(index) {
+        if (index >= textureUrls.length) {
+            console.error("All texture loading attempts failed, using basic material");
+            return;
+        }
+        
+        console.log(`Attempting to load texture from: ${textureUrls[index]}`);
+        
+        loader.load(
+            textureUrls[index], 
+            // Success callback
+            function(texture) {
+                console.log("Earth texture loaded successfully");
+                // Create earth material with dark theme and the loaded texture
+                const textureMaterial = new THREE.MeshPhongMaterial({
+                    map: texture,
+                    bumpMap: texture,
+                    bumpScale: 0.5,
+                    specular: 0x333366,
+                    shininess: 5,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                
+                // Apply the new material to the existing globe
+                globe.material = textureMaterial;
+                globe.material.needsUpdate = true;
+            },
+            // Progress callback
+            undefined,
+            // Error callback
+            function(err) {
+                console.error(`Error loading texture from ${textureUrls[index]}:`, err);
+                // Try the next texture in the list
+                tryLoadTexture(index + 1);
+            }
+        );
+    }
+    
+    // Start trying to load textures
+    tryLoadTexture(0);
+    
+    // Add lights - more intense to make the globe visible
+    const ambientLight = new THREE.AmbientLight(0x404080, 2);
+    scene.add(ambientLight);
+    
+    const directionalLight = new THREE.DirectionalLight(0x8367C7, 2);
+    directionalLight.position.set(1, 1, 1).normalize();
+    scene.add(directionalLight);
+    
+    const pointLight1 = new THREE.PointLight(0x64B6FF, 1.5, 300);
+    pointLight1.position.set(200, 100, 100);
+    scene.add(pointLight1);
+    
+    const pointLight2 = new THREE.PointLight(0xFF6B00, 0.8, 300);
+    pointLight2.position.set(-200, -100, 100);
+    scene.add(pointLight2);
+    
+    // Add highlight points for various countries/regions
+    const highlightLocations = [
+        { lat: 37.7749, lon: -122.4194, name: "San Francisco" },
+        { lat: 40.7128, lon: -74.0060, name: "New York" },
+        { lat: 51.5074, lon: -0.1278, name: "London" },
+        { lat: 48.8566, lon: 2.3522, name: "Paris" },
+        { lat: 35.6762, lon: 139.6503, name: "Tokyo" },
+        { lat: -33.8688, lon: 151.2093, name: "Sydney" },
+        { lat: -23.5505, lon: -46.6333, name: "São Paulo" },
+        { lat: 55.7558, lon: 37.6173, name: "Moscow" },
+        { lat: 28.6139, lon: 77.2090, name: "New Delhi" },
+        { lat: 1.3521, lon: 103.8198, name: "Singapore" },
+    ];
+    
+    const highlightPoints = [];
+    
+    // Convert lat/lon to 3D points and add highlights
+    highlightLocations.forEach(location => {
+        const phi = (90 - location.lat) * (Math.PI / 180);
+        const theta = (location.lon + 180) * (Math.PI / 180);
+        
+        const x = -globeRadius * Math.sin(phi) * Math.cos(theta);
+        const y = globeRadius * Math.cos(phi);
+        const z = globeRadius * Math.sin(phi) * Math.sin(theta);
+        
+        // Create highlight point
+        const highlightGeometry = new THREE.SphereGeometry(1.5, 16, 16);
+        const highlightMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0x64B6FF, 
+            transparent: true,
+            opacity: 0.8
+        });
+        const highlight = new THREE.Mesh(highlightGeometry, highlightMaterial);
+        highlight.position.set(x, y, z);
+        globe.add(highlight);
+        highlightPoints.push(highlight);
+        
+        // Create glow effect
+        const glowGeometry = new THREE.SphereGeometry(2, 16, 16);
+        const glowMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0x64B6FF, 
+            transparent: true,
+            opacity: 0.4
+        });
+        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+        glow.position.set(x, y, z);
+        glow.scale.set(1, 1, 1);
+        globe.add(glow);
+        
+        // Animate glow
+        const pulseSpeed = 0.5 + Math.random() * 0.5;
+        const pulseAnimation = () => {
+            const scale = 1 + 0.3 * Math.sin(Date.now() * 0.001 * pulseSpeed);
+            glow.scale.set(scale, scale, scale);
+            requestAnimationFrame(pulseAnimation);
+        };
+        pulseAnimation();
+    });
+    
+    // Connect points with arcs to show network
+    const connectPoints = (pointA, pointB) => {
+        const pointsGeometry = new THREE.BufferGeometry();
+        const curvePoints = [];
+        
+        // Create curved arc between points
+        for (let i = 0; i <= 20; i++) {
+            const t = i / 20;
+            
+            // Interpolate
+            const x = pointA.x * (1 - t) + pointB.x * t;
+            const y = pointA.y * (1 - t) + pointB.y * t;
+            const z = pointA.z * (1 - t) + pointB.z * t;
+            
+            // Add height to curve
+            const midPoint = new THREE.Vector3(
+                (pointA.x + pointB.x) / 2,
+                (pointA.y + pointB.y) / 2,
+                (pointA.z + pointB.z) / 2
+            );
+            midPoint.normalize().multiplyScalar(globeRadius * 1.2);
+            
+            const arcHeight = 1 - 4 * Math.pow(t - 0.5, 2);
+            const arcPoint = new THREE.Vector3(x, y, z).lerp(midPoint, arcHeight * 0.5);
+            
+            curvePoints.push(arcPoint);
+        }
+        
+        pointsGeometry.setFromPoints(curvePoints);
+        
+        const curveMaterial = new THREE.LineBasicMaterial({
+            color: 0x64B6FF,
+            transparent: true,
+            opacity: 0.5
+        });
+        
+        const curve = new THREE.Line(pointsGeometry, curveMaterial);
+        globe.add(curve);
+    };
+    
+    // Connect random points to create network effect
+    for (let i = 0; i < highlightPoints.length; i++) {
+        for (let j = i + 1; j < highlightPoints.length; j++) {
+            if (Math.random() > 0.7) { // Only connect some pairs
+                connectPoints(
+                    highlightPoints[i].position,
+                    highlightPoints[j].position
+                );
+            }
+        }
+    }
+    
+    // Make globe interactive with mouse
+    let isDragging = false;
+    let previousMousePosition = {
+        x: 0,
+        y: 0
+    };
+    let rotation = {
+        x: 0,
+        y: 0
+    };
+    
+    // Handle mouse down
+    container.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        previousMousePosition = {
+            x: e.clientX,
+            y: e.clientY
+        };
+    });
+    
+    // Handle mouse move
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        
+        const deltaMove = {
+            x: e.clientX - previousMousePosition.x,
+            y: e.clientY - previousMousePosition.y
+        };
+        
+        rotation.x += deltaMove.y * 0.01;
+        rotation.y += deltaMove.x * 0.01;
+        
+        // Limit rotation on x-axis
+        rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, rotation.x));
+        
+        globe.rotation.x = rotation.x;
+        globe.rotation.y = rotation.y;
+        
+        previousMousePosition = {
+            x: e.clientX,
+            y: e.clientY
+        };
+    });
+    
+    // Handle mouse up
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+    });
+    
+    // Handle touch events for mobile
+    container.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+            isDragging = true;
+            previousMousePosition = {
+                x: e.touches[0].clientX,
+                y: e.touches[0].clientY
+            };
+            e.preventDefault();
+        }
+    });
+    
+    document.addEventListener('touchmove', (e) => {
+        if (isDragging && e.touches.length === 1) {
+            const deltaMove = {
+                x: e.touches[0].clientX - previousMousePosition.x,
+                y: e.touches[0].clientY - previousMousePosition.y
+            };
+            
+            rotation.x += deltaMove.y * 0.01;
+            rotation.y += deltaMove.x * 0.01;
+            
+            // Limit rotation on x-axis
+            rotation.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, rotation.x));
+            
+            globe.rotation.x = rotation.x;
+            globe.rotation.y = rotation.y;
+            
+            previousMousePosition = {
+                x: e.touches[0].clientX,
+                y: e.touches[0].clientY
+            };
+            e.preventDefault();
+        }
+    });
+    
+    document.addEventListener('touchend', () => {
+        isDragging = false;
+    });
+    
+    // Auto-rotate when not interacting
+    let autoRotate = true;
+    let lastInteraction = Date.now();
+    
+    container.addEventListener('mousedown', () => {
+        autoRotate = false;
+        lastInteraction = Date.now();
+    });
+    
+    container.addEventListener('touchstart', () => {
+        autoRotate = false;
+        lastInteraction = Date.now();
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
+    
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+        
+        // Check if auto-rotation should resume
+        if (!isDragging && Date.now() - lastInteraction > 2000) {
+            autoRotate = true;
+        }
+        
+        // Apply auto-rotation
+        if (autoRotate) {
+            globe.rotation.y += 0.002; // Auto-rotate speed
+        }
+        
+        renderer.render(scene, camera);
+    }
+    
+    // Start animation
+    animate();
+    
+    // Log success
+    console.log('Globe initialized successfully');
+}
+</script>
+{% endblock %} 

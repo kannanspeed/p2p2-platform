@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0a0d14">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>PEER - P2P Marketplace</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <!-- Three.js for 3D Globe -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <style>
+        .absolute {
+            position: fixed;
+        }
+        
+        .inset-0 {
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+        }
+        
+        .overflow-hidden {
+            overflow: hidden;
+        }
+        
+        .relative {
+            position: relative;
+        }
+        
+        .z-10 {
+            z-index: 10;
+        }
+        
+        .pt-32 {
+            padding-top: 8rem;
+        }
+        
+        .pb-32 {
+            padding-bottom: 8rem;
+        }
+        
+        .min-h-screen {
+            min-height: 100vh;
+        }
+        
+        .max-w-7xl {
+            max-width: 80rem;
+        }
+        
+        .mx-auto {
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .px-4 {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+        
+        .py-20 {
+            padding-top: 5rem;
+            padding-bottom: 5rem;
+        }
+        
+        .sm\:px-6 {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+        
+        .lg\:px-8 {
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+        
+        .flex {
+            display: flex;
+        }
+        
+        .justify-center {
+            justify-content: center;
+        }
+        
+        .mb-12 {
+            margin-bottom: 3rem;
+        }
+        
+        .w-full {
+            width: 100%;
+        }
+        
+        .menu-toggle {
+            display: none;
+        }
+        
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
+        }
+        
+        /* Globe container styles */
+        #globe-container {
+            position: relative;
+            right: 0;
+            top: 0;
+            width: 500px;
+            height: 500px;
+            z-index: 1;
+            margin: 0 auto;
+            margin-left: 2rem;
+            overflow: hidden;
+        }
+        
+        @media (max-width: 1024px) {
+            #globe-container {
+                width: 400px;
+                height: 400px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            #globe-container {
+                position: relative;
+                width: 100%;
+                height: 350px;
+                top: auto;
+                transform: none;
+                margin: 2rem auto;
+                margin-left: 0;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #globe-container {
+                height: 250px;
+            }
+        }
+        
+        /* Country highlight pulse effect */
+        .country-highlight {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(67, 96, 223, 0.7);
+            box-shadow: 0 0 20px 5px rgba(67, 96, 223, 0.5);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(0.8);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.8);
+                opacity: 0.7;
+            }
+        }
+        
+        /* Touch optimizations */
+        @media (max-width: 768px) {
+            .pt-32 {
+                padding-top: 5rem;
+            }
+            
+            .pb-32 {
+                padding-bottom: 5rem;
+            }
+            
+            .py-20 {
+                padding-top: 3rem;
+                padding-bottom: 3rem;
+            }
+            
+            .mb-12 {
+                margin-bottom: 2rem;
+            }
+        }
+        
+        /* Prevent horizontal scrolling */
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+            position: relative;
+        }
+        
+        /* Touch-friendly tap targets */
+        button, a, input[type="submit"], input[type="button"], .btn {
+            touch-action: manipulation;
+        }
+    </style>
+</head>
+<body {% if 'user_id' in session %}data-user-id="{{ session['user_id'] }}"{% endif %}>
+    <!-- Background stars effect -->
+    <div class="absolute inset-0 overflow-hidden" style="z-index: -10; position: fixed;">
+        <div class="stars-bg"></div>
+    </div>
+    
+    <!-- Particles container -->
+    <div class="particles-container" style="z-index: -5; position: fixed;"></div>
+
+    <nav class="navbar">
+        <a href="{{ url_for('index') }}" class="logo">PEER</a>
+        
+        <button id="menu-toggle" class="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <div class="search-box">
+            <form action="{{ url_for('search') }}" method="get" id="search-form">
+                <input type="text" name="query" id="search-input" placeholder="Search products & services...">
+                <button type="submit"><i class="fas fa-search"></i></button>
+            </form>
+        </div>
+        
+        <div class="nav-links">
+            {% if 'user_id' in session %}
+                {% if current_user %}
+                <span class="user-greeting">Hello, {{ current_user.username }}!</span>
+                {% endif %}
+                <a href="{{ url_for('buyer_dashboard') }}">Buy</a>
+                <a href="{{ url_for('seller_dashboard') }}">Sell</a>
+                <a href="{{ url_for('order_history') }}">Orders</a>
+                <a href="{{ url_for('wallet_dashboard') }}"><i class="fas fa-wallet" style="margin-right: 0.5rem;"></i>Wallet</a>
+                <a href="{{ url_for('notifications') }}" class="notifications-icon">
+                    <i class="fas fa-bell"></i>
+                    <span class="notifications-badge" id="notifications-badge">0</span>
+                </a>
+                <a href="{{ url_for('profile') }}"><i class="fas fa-user" style="margin-right: 0.5rem;"></i>Profile</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('signup') }}">Sign Up</a>
+            {% endif %}
+        </div>
+    </nav>
+    
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-messages">
+                    {% for category, message in messages %}
+                        <li class="flash-message flash-{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <!-- Space illustrations helper script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add smooth scrolling to the entire page
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetEl = document.querySelector(this.getAttribute('href'));
+                if (targetEl) {
+                    targetEl.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Add parallax effect to floating elements on scroll
+        window.addEventListener('scroll', function() {
+            const scrollY = window.scrollY;
+            
+            // Optional: add parallax scrolling effects
+            document.querySelectorAll('.parallax').forEach(element => {
+                const speed = element.getAttribute('data-speed') || 0.5;
+                element.style.transform = `translateY(${scrollY * speed}px)`;
+            });
+        });
+        
+        // Fix for background elements to prevent unwanted movement
+        document.body.addEventListener('mousemove', function(e) {
+            // Disable unwanted background movement on slight page moves
+            e.preventDefault();
+        }, { passive: true });
+        
+        // Fix for iOS scrolling issues
+        document.addEventListener('touchmove', function(e) {
+            if (e.target.classList.contains('prevent-scroll')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // Optimize performance on mobile
+        const isSmallScreen = window.innerWidth < 768;
+        if (isSmallScreen) {
+            // Disable some animations on mobile
+            const heavyAnimations = document.querySelectorAll('.stars-bg, .particles-container');
+            heavyAnimations.forEach(el => {
+                el.style.opacity = '0.2';
+                if (window.innerWidth < 480) {
+                    el.style.animation = 'none';
+                }
+            });
+        }
+    });
+    </script>
+</body>
+</html> 

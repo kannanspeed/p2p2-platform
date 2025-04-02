@@ -1,0 +1,442 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <h2 class="dashboard-title">Buyer Dashboard</h2>
+    <p class="dashboard-subtitle">Browse products and services available from sellers.</p>
+    
+    <!-- Filter Section -->
+    <div class="filter-section" style="margin-bottom: 2rem; padding: 1rem; background-color: rgba(255, 255, 255, 0.05); border-radius: 10px;">
+        <h3 style="margin-top: 0; margin-bottom: 1rem; font-size: 1.2rem;">Filter Options</h3>
+        
+        <form method="GET" action="{{ url_for('buyer_dashboard') }}" id="filter-form">
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1rem;">
+                <!-- Post Type Filter -->
+                <div style="flex: 1; min-width: 200px;">
+                    <label for="post_type" style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.8);">Type</label>
+                    <select id="post_type" name="post_type" class="form-control" onchange="document.getElementById('filter-form').submit()">
+                        <option value="">All Types</option>
+                        <option value="product" {% if selected_type == 'product' %}selected{% endif %}>Products</option>
+                        <option value="service" {% if selected_type == 'service' %}selected{% endif %}>Services</option>
+                    </select>
+                </div>
+                
+                <!-- Payment Method Filter -->
+                <div style="flex: 1; min-width: 200px;">
+                    <label for="payment_method" style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.8);">Payment Method</label>
+                    <select id="payment_method" name="payment_method" class="form-control" onchange="document.getElementById('filter-form').submit()">
+                        <option value="">All Payment Methods</option>
+                        <option value="bank" {% if selected_payment == 'bank' %}selected{% endif %}>Bank Transfer</option>
+                        <option value="cash" {% if selected_payment == 'cash' %}selected{% endif %}>Cash</option>
+                        <option value="upi" {% if selected_payment == 'upi' %}selected{% endif %}>UPI</option>
+                        <option value="usdt" {% if selected_payment == 'usdt' %}selected{% endif %}>USDT</option>
+                    </select>
+                </div>
+                
+                <!-- Location Filter (replacing search) -->
+                <div style="flex: 1; min-width: 200px;">
+                    <label for="location" style="display: block; margin-bottom: 0.5rem; color: rgba(255, 255, 255, 0.8);">Location</label>
+                    <select id="location" name="location" class="form-control" onchange="document.getElementById('filter-form').submit()">
+                        <option value="">All Locations</option>
+                        <option value="USA" {% if selected_location == 'USA' %}selected{% endif %}>USA</option>
+                        <option value="Canada" {% if selected_location == 'Canada' %}selected{% endif %}>Canada</option>
+                        <option value="UK" {% if selected_location == 'UK' %}selected{% endif %}>UK</option>
+                        <option value="EU" {% if selected_location == 'EU' %}selected{% endif %}>Europe</option>
+                        <option value="Asia" {% if selected_location == 'Asia' %}selected{% endif %}>Asia</option>
+                        <option value="Australia" {% if selected_location == 'Australia' %}selected{% endif %}>Australia</option>
+                        <option value="Other" {% if selected_location == 'Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Reset Filters Button -->
+            <div style="text-align: right;">
+                <a href="{{ url_for('buyer_dashboard') }}" class="btn-secondary btn-sm">
+                    <i class="fas fa-times" style="margin-right: 0.3rem;"></i> Reset Filters
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Active Filters Display -->
+    {% if selected_type or selected_payment or selected_location %}
+        <div style="margin-bottom: 1.5rem; padding: 0.5rem 1rem; background-color: rgba(30, 30, 50, 0.7); border-radius: 8px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <span style="color: rgba(255, 255, 255, 0.7);">Active filters:</span>
+                {% if selected_type %}
+                    <span class="filter-tag">{{ selected_type|capitalize }}</span>
+                {% endif %}
+                {% if selected_payment %}
+                    <span class="filter-tag">{{ selected_payment|capitalize }}</span>
+                {% endif %}
+                {% if selected_location %}
+                    <span class="filter-tag">{{ selected_location }}</span>
+                {% endif %}
+            </div>
+            <span style="color: rgba(255, 255, 255, 0.7);">{{ posts|length }} result{% if posts|length != 1 %}s{% endif %} found</span>
+        </div>
+    {% endif %}
+    
+    {% if posts %}
+        <div class="grid">
+            {% for post in posts %}
+                <div class="post-item {% if post.is_boosted %}boosted-post{% endif %}">
+                    {% if post.is_boosted %}
+                        <div class="tag-boosted">
+                            <i class="fas fa-ad" style="margin-right: 0.3rem;"></i>
+                            Boosted
+                        </div>
+                    {% endif %}
+                    <h3 class="post-title">{{ post.title }}</h3>
+                    
+                    <!-- Seller Information -->
+                    <div class="seller-info">
+                        <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                            <p style="font-weight: 500; margin: 0;">{{ post.seller.username }}</p>
+                            {% if post.seller.is_verified %}
+                                <span class="verified-badge" title="Verified Seller - KYC Verified">
+                                    <i class="fas fa-shield-alt"></i>
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="trade-info">
+                            <span class="trade-count">
+                                <i class="fas fa-exchange-alt"></i> 
+                                {{ post.seller.reviews_received|length }} trades
+                            </span>
+                            
+                            <span class="rating">
+                                {% set avg_rating = post.seller.reviews_received|map(attribute='rating')|sum / post.seller.reviews_received|length if post.seller.reviews_received|length > 0 else 0 %}
+                                {% for i in range(5) %}
+                                    {% if i < avg_rating|round(0, 'floor') %}
+                                        <i class="fas fa-star filled"></i>
+                                    {% else %}
+                                        <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                ({{ avg_rating|round(1) }})
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Post Type Specific Information -->
+                    {% if post.post_type == 'usdt' %}
+                        <div class="usdt-details">
+                            <p class="detail-line">
+                                <i class="fas fa-coins" style="margin-right: 0.5rem; color: #FF9900;"></i>
+                                <strong>Quantity:</strong> <span class="highlight">
+                                    {% if post.usdt_quantity and post.usdt_quantity != "None" and post.usdt_quantity != "null" %}
+                                        {{ post.usdt_quantity }} USDT
+                                    {% elif post.description and 'quantity' in post.description|string|lower %}
+                                        {% set desc = post.description|string %}
+                                        {% if desc.split('Quantity:')[1]|default('') %}
+                                            {{ desc.split('Quantity:')[1].strip().split(' ')[0] }} USDT
+                                        {% else %}
+                                            {{ post.title }} USDT
+                                        {% endif %}
+                                    {% elif post.title and ' ' in post.title and post.title.split(' ')[0].isdigit() %}
+                                        {{ post.title.split(' ')[0] }} USDT
+                                    {% else %}
+                                        {{ post.title }} USDT
+                                    {% endif %}
+                                </span>
+                            </p>
+                            <p class="detail-line">
+                                <i class="fas fa-tag" style="margin-right: 0.5rem; color: #5cb85c;"></i>
+                                <strong>Price:</strong> <span class="highlight">
+                                    {% if post.usdt_price and post.usdt_price != "None" and post.usdt_price != "null" %}
+                                        {{ post.usdt_price }}
+                                    {% elif post.price and post.price != "None" and post.price != "null" %}
+                                        {{ post.price }}
+                                    {% elif post.description and 'price' in post.description|string|lower %}
+                                        {% set desc = post.description|string %}
+                                        {% if desc.split('Price per USDT:')[1]|default('') %}
+                                            {{ desc.split('Price per USDT:')[1].strip().split(' ')[0] }} per USDT
+                                        {% else %}
+                                            Contact seller
+                                        {% endif %}
+                                    {% else %}
+                                        Contact seller
+                                    {% endif %}
+                                </span>
+                            </p>
+                            <p class="detail-line">
+                                <i class="fas fa-clock" style="margin-right: 0.5rem; color: #5bc0de;"></i>
+                                <strong>Completion Time:</strong> {{ post.timeline_options }}
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="service-details">
+                            <p class="detail-line">
+                                <i class="fas fa-tools" style="margin-right: 0.5rem; color: #5bc0de;"></i>
+                                <strong>Service:</strong> {{ post.description|truncate(50) }}
+                            </p>
+                            <p class="detail-line">
+                                <i class="fas fa-tag" style="margin-right: 0.5rem; color: #5cb85c;"></i>
+                                <strong>Price:</strong> <span class="highlight">
+                                    {% if post.price and post.price != "None" and post.price != "null" %}
+                                        {{ post.price }}
+                                    {% elif post.service_price and post.service_price != "None" and post.service_price != "null" %}
+                                        {{ post.service_price }}
+                                    {% else %}
+                                        Contact seller
+                                    {% endif %}
+                                </span>
+                            </p>
+                            <p class="detail-line">
+                                <i class="fas fa-clock" style="margin-right: 0.5rem; color: #5bc0de;"></i>
+                                <strong>Estimated Time:</strong> {{ post.timeline_options }}
+                            </p>
+                        </div>
+                    {% endif %}
+                    
+                    <p class="detail-line">
+                        <i class="fas fa-money-bill-wave" style="margin-right: 0.5rem; color: #28a745;"></i>
+                        <strong>Payment:</strong>
+                        {% if post.payment_method == 'other' %}
+                            {{ post.custom_payment }}
+                        {% else %}
+                            {{ post.payment_method.capitalize() }}
+                        {% endif %}
+                    </p>
+                    
+                    <p class="detail-line">
+                        <i class="fas fa-map-marker-alt" style="margin-right: 0.5rem; color: #ff6b6b;"></i>
+                        <strong>Location:</strong> {{ post.location or 'Not specified' }}
+                    </p>
+                    
+                    <p class="post-date" data-timestamp="{{ post.created_at.timestamp() }}">Posted: {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    
+                    <div class="action-buttons">
+                        <a href="{{ url_for('post_detail', post_id=post.id) }}" class="btn-view-details">View Details</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-shopping-bag"></i>
+            <p>No products or services match your filter criteria.</p>
+            <p>Try adjusting your filters or <a href="{{ url_for('seller_dashboard') }}" style="color: var(--status-blue); text-decoration: none; font-weight: 500;">become a seller</a> yourself!</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Add CSS for filter tags -->
+<style>
+    .filter-tag {
+        display: inline-block;
+        background-color: var(--status-blue);
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        margin-left: 0.5rem;
+    }
+    
+    /* Adjust form controls for dark theme */
+    .form-control {
+        background-color: rgba(30, 30, 50, 0.7);
+        border: 1px solid rgba(100, 182, 255, 0.3);
+        color: white;
+        padding: 0.5rem;
+        border-radius: 5px;
+    }
+    
+    .form-control:focus {
+        border-color: var(--primary-color);
+        outline: none;
+    }
+    
+    select.form-control option {
+        background-color: #111827;
+    }
+    
+    /* Boosted post styles */
+    .boosted-post {
+        border: 1px solid rgba(255, 107, 0, 0.4);
+        background-color: rgba(255, 107, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .boosted-post::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #FF6B00, transparent);
+    }
+    
+    .tag-boosted {
+        background-color: #FF6B00;
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    /* Verified seller badge */
+    .verified-badge {
+        display: inline-flex;
+        margin-left: 0.5rem;
+        color: #28a745;
+        font-size: 0.9rem;
+        background-color: rgba(40, 167, 69, 0.1);
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+        cursor: help;
+    }
+    
+    /* Seller and trade info styles */
+    .seller-info {
+        background-color: rgba(30, 30, 50, 0.7);
+        padding: 0.7rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+    
+    .trade-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .trade-count {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .rating {
+        display: flex;
+        align-items: center;
+        gap: 0.2rem;
+        font-size: 0.85rem;
+    }
+    
+    .rating .filled {
+        color: #FFC107;
+    }
+    
+    /* Post details styles */
+    .detail-line {
+        margin: 0.5rem 0;
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .highlight {
+        color: #64B6FF;
+        font-weight: 500;
+    }
+    
+    .post-date {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.6);
+        margin: 1rem 0;
+        text-align: right;
+    }
+    
+    .action-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1.2rem;
+    }
+    
+    .btn-buy {
+        display: inline-block;
+        background-color: #28a745;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        text-decoration: none;
+        text-align: center;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-buy:hover {
+        background-color: #218838;
+        transform: translateY(-2px);
+    }
+    
+    .usdt-details, .service-details {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 0.8rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Convert timestamps to relative time format
+    const postDates = document.querySelectorAll('.post-date');
+    
+    postDates.forEach(dateElement => {
+        // Get the timestamp from data attribute (Unix timestamp in seconds)
+        const timestamp = parseFloat(dateElement.getAttribute('data-timestamp')) * 1000; // Convert to milliseconds
+        const now = new Date().getTime();
+        
+        // Calculate the time difference in milliseconds
+        const timeDiff = now - timestamp;
+        
+        // Convert to appropriate unit
+        let relativeTime = '';
+        
+        if (timeDiff < 60000) { // Less than a minute
+            relativeTime = `just now`;
+        } else if (timeDiff < 120000) { // Less than 2 minutes
+            relativeTime = `1 min ago`;
+        } else if (timeDiff < 3600000) { // Less than an hour
+            const minutes = Math.floor(timeDiff / 60000);
+            relativeTime = `${minutes} mins ago`;
+        } else if (timeDiff < 7200000) { // Less than 2 hours
+            relativeTime = `1 hr ago`;
+        } else if (timeDiff < 86400000) { // Less than a day
+            const hours = Math.floor(timeDiff / 3600000);
+            relativeTime = `${hours} hrs ago`;
+        } else if (timeDiff < 172800000) { // Less than 2 days
+            relativeTime = `1 day ago`;
+        } else if (timeDiff < 2592000000) { // Less than 30 days
+            const days = Math.floor(timeDiff / 86400000);
+            relativeTime = `${days} days ago`;
+        } else if (timeDiff < 63072000000) { // Less than 2 months
+            relativeTime = `1 month ago`;
+        } else if (timeDiff < 31536000000) { // Less than a year
+            const months = Math.floor(timeDiff / 2592000000);
+            relativeTime = `${months} months ago`;
+        } else if (timeDiff < 63072000000) { // Less than 2 years
+            relativeTime = `1 year ago`;
+        } else {
+            const years = Math.floor(timeDiff / 31536000000);
+            relativeTime = `${years} years ago`;
+        }
+        
+        // Get the original timestamp text for title attribute
+        const originalText = dateElement.textContent;
+        const dateStr = originalText.replace('Posted: ', '').trim();
+        
+        // Update the element with both absolute and relative time
+        dateElement.innerHTML = `Posted: <span title="${dateStr}">${relativeTime}</span>`;
+    });
+});
+
+// Function to handle Buy Now clicks
+function buyNow(event, postId) {
+    event.preventDefault();
+    
+    try {
+        // Redirect to create_order or fall back to post_detail if it fails
+        window.location.href = `/create_order/${postId}`;
+    } catch (error) {
+        console.error("Error navigating to order page:", error);
+        window.location.href = `/post/${postId}`;
+    }
+}
+</script>
+{% endblock %} 

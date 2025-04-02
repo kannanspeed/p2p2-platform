@@ -1,0 +1,682 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <h2 class="dashboard-title">Transaction History</h2>
+    
+    <!-- Filters and Search -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+        <div>
+            <label for="transaction-filter" class="filter-label">Filter by:</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <select id="transaction-filter" class="form-control form-select" style="min-width: 150px;">
+                    <option value="all">All Transactions</option>
+                    <option value="purchases">Purchases</option>
+                    <option value="sales">Sales</option>
+                    <option value="wallet">Wallet Transfers</option>
+                </select>
+                <select id="time-filter" class="form-control form-select" style="min-width: 150px;">
+                    <option value="all">All Time</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="year">This Year</option>
+                </select>
+                <select id="status-filter" class="form-control form-select" style="min-width: 150px;">
+                    <option value="all">All Statuses</option>
+                    <option value="completed">Completed</option>
+                    <option value="pending">Pending</option>
+                    <option value="canceled">Canceled</option>
+                </select>
+            </div>
+        </div>
+        <div>
+            <div class="search-box">
+                <input type="text" id="transaction-search" placeholder="Search by ID, name, etc." class="form-control">
+                <button id="search-btn" class="btn-primary" style="border-radius: 0 4px 4px 0;">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transactions Summary -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="summary-icon">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="summary-info">
+                <h4>Total Purchases</h4>
+                <div class="summary-value">{{ purchase_count|default(8) }}</div>
+                <div class="summary-amount">${{ purchase_amount|default('1,250.00') }}</div>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="summary-icon">
+                <i class="fas fa-tag"></i>
+            </div>
+            <div class="summary-info">
+                <h4>Total Sales</h4>
+                <div class="summary-value">{{ sales_count|default(12) }}</div>
+                <div class="summary-amount">${{ sales_amount|default('1,835.50') }}</div>
+            </div>
+        </div>
+        
+        <div class="summary-card">
+            <div class="summary-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="summary-info">
+                <h4>Wallet Transfers</h4>
+                <div class="summary-value">{{ wallet_count|default(5) }}</div>
+                <div class="summary-amount">${{ wallet_amount|default('750.00') }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transaction History Table -->
+    <div class="transaction-table-container">
+        <table class="transaction-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Amount</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="transaction-tbody">
+                <!-- Sample Purchase Transaction -->
+                <tr class="transaction-row" data-type="purchase" data-status="completed">
+                    <td class="date-cell">
+                        <div class="date-primary">03/25/2023</div>
+                        <div class="date-secondary">10:45 AM</div>
+                    </td>
+                    <td>
+                        <span class="tag-purchase">Purchase</span>
+                    </td>
+                    <td class="description-cell">
+                        <div class="transaction-title">Professional Logo Design</div>
+                        <div class="transaction-subtitle">Seller: DesignMaster</div>
+                    </td>
+                    <td>
+                        <span class="status-tag completed">Completed</span>
+                    </td>
+                    <td class="amount-cell">
+                        <div class="amount outgoing">-$150.00</div>
+                        <div class="payment-method">Bank Transfer</div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="#" class="action-btn" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="#" class="action-btn" title="Download Receipt">
+                                <i class="fas fa-file-invoice"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                
+                <!-- Sample Sale Transaction -->
+                <tr class="transaction-row" data-type="sale" data-status="completed">
+                    <td class="date-cell">
+                        <div class="date-primary">03/22/2023</div>
+                        <div class="date-secondary">02:15 PM</div>
+                    </td>
+                    <td>
+                        <span class="tag-sale">Sale</span>
+                    </td>
+                    <td class="description-cell">
+                        <div class="transaction-title">Website Development Service</div>
+                        <div class="transaction-subtitle">Buyer: TechStartup</div>
+                    </td>
+                    <td>
+                        <span class="status-tag completed">Completed</span>
+                    </td>
+                    <td class="amount-cell">
+                        <div class="amount incoming">+$350.00</div>
+                        <div class="payment-method">UPI</div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="#" class="action-btn" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="#" class="action-btn" title="Download Receipt">
+                                <i class="fas fa-file-invoice"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                
+                <!-- Sample Pending Sale Transaction -->
+                <tr class="transaction-row" data-type="sale" data-status="pending">
+                    <td class="date-cell">
+                        <div class="date-primary">03/20/2023</div>
+                        <div class="date-secondary">09:30 AM</div>
+                    </td>
+                    <td>
+                        <span class="tag-sale">Sale</span>
+                    </td>
+                    <td class="description-cell">
+                        <div class="transaction-title">Content Writing Services</div>
+                        <div class="transaction-subtitle">Buyer: ContentCorp</div>
+                    </td>
+                    <td>
+                        <span class="status-tag pending">Pending</span>
+                    </td>
+                    <td class="amount-cell">
+                        <div class="amount pending">+$175.00</div>
+                        <div class="payment-method">Cash</div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="#" class="action-btn" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                
+                <!-- Sample Wallet Transaction -->
+                <tr class="transaction-row" data-type="wallet" data-status="completed">
+                    <td class="date-cell">
+                        <div class="date-primary">03/18/2023</div>
+                        <div class="date-secondary">05:45 PM</div>
+                    </td>
+                    <td>
+                        <span class="tag-wallet">Wallet</span>
+                    </td>
+                    <td class="description-cell">
+                        <div class="transaction-title">Deposit to Wallet</div>
+                        <div class="transaction-subtitle">Transaction ID: TXID123456</div>
+                    </td>
+                    <td>
+                        <span class="status-tag completed">Completed</span>
+                    </td>
+                    <td class="amount-cell">
+                        <div class="amount incoming">+$500.00</div>
+                        <div class="payment-method">Bank Transfer</div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="#" class="action-btn" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="#" class="action-btn" title="Download Receipt">
+                                <i class="fas fa-file-invoice"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                
+                <!-- Sample Canceled Transaction -->
+                <tr class="transaction-row" data-type="purchase" data-status="canceled">
+                    <td class="date-cell">
+                        <div class="date-primary">03/15/2023</div>
+                        <div class="date-secondary">11:20 AM</div>
+                    </td>
+                    <td>
+                        <span class="tag-purchase">Purchase</span>
+                    </td>
+                    <td class="description-cell">
+                        <div class="transaction-title">Mobile App UI Design</div>
+                        <div class="transaction-subtitle">Seller: UIXpert</div>
+                    </td>
+                    <td>
+                        <span class="status-tag canceled">Canceled</span>
+                    </td>
+                    <td class="amount-cell">
+                        <div class="amount canceled">$0.00</div>
+                        <div class="payment-method">N/A</div>
+                    </td>
+                    <td>
+                        <div class="action-buttons">
+                            <a href="#" class="action-btn" title="View Details">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <div class="pagination-info">Showing 1-5 of 25 transactions</div>
+        <div class="pagination-controls">
+            <button class="pagination-btn" disabled>
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="pagination-btn active">1</button>
+            <button class="pagination-btn">2</button>
+            <button class="pagination-btn">3</button>
+            <span class="pagination-ellipsis">...</span>
+            <button class="pagination-btn">5</button>
+            <button class="pagination-btn">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Export Options -->
+    <div style="margin-top: 2rem; text-align: right;">
+        <div class="dropdown">
+            <button class="btn-secondary dropdown-toggle">
+                <i class="fas fa-download" style="margin-right: 0.5rem;"></i> Export
+                <i class="fas fa-chevron-down" style="margin-left: 0.5rem;"></i>
+            </button>
+            <div class="dropdown-menu">
+                <a href="#" class="dropdown-item export-pdf">PDF</a>
+                <a href="#" class="dropdown-item export-csv">CSV</a>
+                <a href="#" class="dropdown-item export-excel">Excel</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filter functionality
+        const transactionFilter = document.getElementById('transaction-filter');
+        const timeFilter = document.getElementById('time-filter');
+        const statusFilter = document.getElementById('status-filter');
+        const searchInput = document.getElementById('transaction-search');
+        const searchBtn = document.getElementById('search-btn');
+        const transactionRows = document.querySelectorAll('.transaction-row');
+        
+        function applyFilters() {
+            const typeFilter = transactionFilter.value;
+            const statusFilterValue = statusFilter.value;
+            const searchTerm = searchInput.value.toLowerCase();
+            
+            transactionRows.forEach(row => {
+                const rowType = row.getAttribute('data-type');
+                const rowStatus = row.getAttribute('data-status');
+                const description = row.querySelector('.description-cell').textContent.toLowerCase();
+                
+                let shouldShow = true;
+                
+                // Type filter
+                if (typeFilter !== 'all' && rowType !== typeFilter) {
+                    shouldShow = false;
+                }
+                
+                // Status filter
+                if (statusFilterValue !== 'all' && rowStatus !== statusFilterValue) {
+                    shouldShow = false;
+                }
+                
+                // Search filter
+                if (searchTerm && !description.includes(searchTerm)) {
+                    shouldShow = false;
+                }
+                
+                // Show or hide the row
+                row.style.display = shouldShow ? '' : 'none';
+            });
+        }
+        
+        // Add event listeners to filters
+        transactionFilter.addEventListener('change', applyFilters);
+        timeFilter.addEventListener('change', applyFilters);
+        statusFilter.addEventListener('change', applyFilters);
+        searchBtn.addEventListener('click', applyFilters);
+        searchInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+        
+        // Export functionality (placeholder)
+        document.querySelector('.export-pdf').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Export to PDF functionality will be implemented');
+        });
+        
+        document.querySelector('.export-csv').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Export to CSV functionality will be implemented');
+        });
+        
+        document.querySelector('.export-excel').addEventListener('click', function(e) {
+            e.preventDefault();
+            alert('Export to Excel functionality will be implemented');
+        });
+        
+        // Dropdown toggle
+        const dropdownToggle = document.querySelector('.dropdown-toggle');
+        const dropdownMenu = document.querySelector('.dropdown-menu');
+        
+        dropdownToggle.addEventListener('click', function() {
+            dropdownMenu.style.display = dropdownMenu.style.display === 'block' ? 'none' : 'block';
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                dropdownMenu.style.display = 'none';
+            }
+        });
+        
+        // Pagination (placeholder)
+        document.querySelectorAll('.pagination-btn').forEach(btn => {
+            if (!btn.disabled && !btn.classList.contains('active')) {
+                btn.addEventListener('click', function() {
+                    alert('Pagination will be implemented');
+                });
+            }
+        });
+    });
+</script>
+
+<style>
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .summary-card {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .summary-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        background-color: rgba(100, 182, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--primary-color);
+        margin-right: 1.5rem;
+    }
+    
+    .summary-info {
+        flex: 1;
+    }
+    
+    .summary-info h4 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .summary-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+    }
+    
+    .summary-amount {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 1rem;
+    }
+    
+    .transaction-table-container {
+        overflow-x: auto;
+        margin-bottom: 2rem;
+    }
+    
+    .transaction-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .transaction-table th {
+        text-align: left;
+        padding: 1rem;
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: normal;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .transaction-row {
+        transition: background-color 0.2s ease;
+    }
+    
+    .transaction-row:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    
+    .transaction-table td {
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .date-cell {
+        white-space: nowrap;
+    }
+    
+    .date-primary {
+        font-weight: bold;
+    }
+    
+    .date-secondary {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .tag-purchase,
+    .tag-sale,
+    .tag-wallet {
+        padding: 0.3rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    
+    .tag-purchase {
+        background-color: rgba(100, 182, 255, 0.2);
+        color: var(--primary-color);
+    }
+    
+    .tag-sale {
+        background-color: rgba(75, 201, 143, 0.2);
+        color: var(--success-color);
+    }
+    
+    .tag-wallet {
+        background-color: rgba(255, 107, 0, 0.2);
+        color: #FF6B00;
+    }
+    
+    .description-cell {
+        max-width: 300px;
+    }
+    
+    .transaction-title {
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+    }
+    
+    .transaction-subtitle {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .status-tag {
+        padding: 0.3rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    
+    .status-tag.completed {
+        background-color: rgba(75, 201, 143, 0.2);
+        color: var(--success-color);
+    }
+    
+    .status-tag.pending {
+        background-color: rgba(255, 193, 7, 0.2);
+        color: #FFC107;
+    }
+    
+    .status-tag.canceled {
+        background-color: rgba(220, 53, 69, 0.2);
+        color: var(--danger-color);
+    }
+    
+    .amount-cell {
+        white-space: nowrap;
+    }
+    
+    .amount {
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+    }
+    
+    .amount.incoming {
+        color: var(--success-color);
+    }
+    
+    .amount.outgoing {
+        color: var(--danger-color);
+    }
+    
+    .amount.pending {
+        color: #FFC107;
+    }
+    
+    .amount.canceled {
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .payment-method {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        text-decoration: none;
+        transition: background-color 0.2s ease;
+    }
+    
+    .action-btn:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .search-box {
+        display: flex;
+    }
+    
+    .search-box input {
+        border-radius: 4px 0 0 4px;
+        min-width: 250px;
+    }
+    
+    .search-box button {
+        border-radius: 0 4px 4px 0;
+        padding: 0.5rem 1rem;
+    }
+    
+    .pagination-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 2rem;
+    }
+    
+    .pagination-info {
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .pagination-controls {
+        display: flex;
+        align-items: center;
+    }
+    
+    .pagination-btn {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        color: white;
+        margin: 0 0.25rem;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+    }
+    
+    .pagination-btn:hover:not(:disabled):not(.active) {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .pagination-btn.active {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+    
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .pagination-ellipsis {
+        margin: 0 0.25rem;
+    }
+    
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .dropdown-toggle {
+        display: flex;
+        align-items: center;
+    }
+    
+    .dropdown-menu {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 100%;
+        background-color: rgb(32, 33, 36);
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        padding: 0.5rem 0;
+        min-width: 120px;
+        z-index: 10;
+    }
+    
+    .dropdown-item {
+        display: block;
+        padding: 0.5rem 1rem;
+        color: white;
+        text-decoration: none;
+        transition: background-color 0.2s ease;
+    }
+    
+    .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+</style>
+{% endblock %} 

@@ -1,0 +1,147 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <h2 class="dashboard-title">Seller Dashboard</h2>
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <p class="dashboard-subtitle">Manage your products and services.</p>
+        <a href="{{ url_for('create_post') }}" class="btn-create-post">
+            <i class="fas fa-plus"></i> Create New Post
+        </a>
+    </div>
+    
+    {% if posts %}
+        <div class="grid">
+            {% for post in posts %}
+                <div class="post-item {% if post.is_boosted %}boosted-post{% endif %} {% if post.is_draft %}draft-post{% endif %}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        {% if post.post_type == 'service' %}
+                            <span class="tag-service">Service</span>
+                        {% else %}
+                            <span class="tag-product">Product</span>
+                        {% endif %}
+                        
+                        <div>
+                            {% if post.is_boosted %}
+                                <span class="tag-boosted">
+                                    <i class="fas fa-ad" style="margin-right: 0.3rem;"></i> Boosted
+                                </span>
+                            {% endif %}
+                            
+                            {% if post.is_draft %}
+                                <span class="tag-draft">
+                                    <i class="fas fa-file" style="margin-right: 0.3rem;"></i> Draft
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <h3 class="post-title">{{ post.title }}</h3>
+                    <p class="post-desc">{{ post.description[:100] }}{% if post.description|length > 100 %}...{% endif %}</p>
+                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
+                        <strong style="color: white;">Payment:</strong> 
+                        {% if post.payment_method == 'other' %}
+                            {{ post.custom_payment }}
+                        {% else %}
+                            {{ post.payment_method.capitalize() }}
+                        {% endif %}
+                    </p>
+                    
+                    {% if post.is_boosted %}
+                        <p style="color: #FF6B00; font-size: 0.9rem;">
+                            <i class="fas fa-clock" style="margin-right: 0.3rem;"></i> Boost expires: 
+                            {{ post.boost_expires_at.strftime('%Y-%m-%d %H:%M') }}
+                        </p>
+                    {% endif %}
+                    
+                    <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 1rem;">Created: {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    
+                    <div style="text-align: center; margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                        <a href="{{ url_for('post_detail', post_id=post.id) }}" class="btn-view-details">View Details</a>
+                        
+                        {% if post.is_draft %}
+                            <a href="{{ url_for('edit_post', post_id=post.id) }}" class="btn-secondary">
+                                <i class="fas fa-edit" style="margin-right: 0.3rem;"></i> Edit Draft
+                            </a>
+                            <form method="POST" action="{{ url_for('publish_draft', post_id=post.id) }}" style="display: inline;">
+                                <button type="submit" class="btn-primary">Publish Draft</button>
+                            </form>
+                        {% endif %}
+                        
+                        {% if not post.is_boosted and not post.is_draft %}
+                            <a href="{{ url_for('boost_post', post_id=post.id) }}" class="btn-secondary" style="background-color: rgba(255, 107, 0, 0.8);">
+                                <i class="fas fa-rocket" style="margin-right: 0.3rem;"></i> Boost Listing
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-tag"></i>
+            <p>You haven't created any posts yet.</p>
+            <p>Start selling by creating your first post!</p>
+            <a href="{{ url_for('create_post') }}" class="btn-create-post" style="margin-top: 1rem;">
+                <i class="fas fa-plus" style="margin-right: 0.5rem;"></i> Create Post
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .tag-boosted {
+        background-color: #FF6B00;
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .tag-draft {
+        background-color: #64B6FF;
+        color: white;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .boosted-post {
+        border: 1px solid rgba(255, 107, 0, 0.4);
+        background-color: rgba(255, 107, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .boosted-post::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #FF6B00, transparent);
+    }
+    
+    .draft-post {
+        border: 1px solid rgba(100, 182, 255, 0.4);
+        background-color: rgba(100, 182, 255, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .draft-post::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #64B6FF, transparent);
+    }
+</style>
+{% endblock %} 

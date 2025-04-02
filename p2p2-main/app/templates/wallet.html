@@ -1,0 +1,154 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <h2 class="dashboard-title">USDT Wallet (BEP20)</h2>
+    
+    <div class="wallet-overview">
+        <div class="wallet-balance nested-card">
+            <h3 class="section-title">Balance</h3>
+            <div class="balance-amount">{{ wallet.balance }} USDT</div>
+            <div class="address-box" style="margin-top: 1.5rem;">
+                <span class="address-label" style="color: rgba(255, 255, 255, 0.7); display: block; margin-bottom: 0.5rem;">Wallet Address:</span>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <code class="wallet-address" style="flex: 1; overflow: auto; color: white; background-color: rgba(255, 255, 255, 0.05); padding: 0.5rem; border-radius: 8px;">{{ wallet.address }}</code>
+                    <button class="btn-secondary" style="padding: 0.6rem 1rem;" data-clipboard-text="{{ wallet.address }}">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="wallet-actions nested-card" style="display: flex; flex-direction: column; justify-content: center; gap: 1.5rem;">
+            <h3 class="section-title">Actions</h3>
+            <a href="{{ url_for('send_usdt') }}" class="btn-view-details" style="text-align: center;">
+                <i class="fas fa-paper-plane" style="margin-right: 0.5rem;"></i> Send USDT
+            </a>
+            <a href="{{ url_for('receive_usdt') }}" class="btn-success" style="text-align: center;">
+                <i class="fas fa-qrcode" style="margin-right: 0.5rem;"></i> Receive USDT
+            </a>
+        </div>
+    </div>
+    
+    <div class="nested-card" style="margin-top: 2rem;">
+        <h3 class="section-title">Recent Transactions</h3>
+        
+        {% if transactions %}
+            <div class="transaction-list">
+                {% for tx in transactions %}
+                    <div class="transaction-item" data-tx-hash="{{ tx.tx_hash }}">
+                        <div class="transaction-icon">
+                            {% if tx.tx_type == 'send' %}
+                                <i class="fas fa-arrow-right tx-send"></i>
+                            {% else %}
+                                <i class="fas fa-arrow-left tx-receive"></i>
+                            {% endif %}
+                        </div>
+                        <div class="transaction-details">
+                            <div class="transaction-info" style="color: rgba(255, 255, 255, 0.8);">
+                                {% if tx.tx_type == 'send' %}
+                                    <span>Sent to: </span>
+                                    <code class="address-short" style="background-color: rgba(255, 255, 255, 0.05); padding: 0.2rem 0.5rem; border-radius: 4px;">{{ tx.to_address[:8] }}...{{ tx.to_address[-6:] }}</code>
+                                {% else %}
+                                    <span>Received from: </span>
+                                    <code class="address-short" style="background-color: rgba(255, 255, 255, 0.05); padding: 0.2rem 0.5rem; border-radius: 4px;">{{ tx.from_address[:8] }}...{{ tx.from_address[-6:] }}</code>
+                                {% endif %}
+                            </div>
+                            <div class="status-tag" style="background-color: 
+                                {% if tx.status == 'completed' %}var(--success-color)
+                                {% elif tx.status == 'failed' %}var(--danger-color)
+                                {% else %}var(--secondary-color){% endif %}">
+                                {{ tx.status.capitalize() }}
+                            </div>
+                        </div>
+                        <div class="transaction-amount">
+                            {% if tx.tx_type == 'send' %}
+                                <span class="amount-send">-{{ tx.amount }} USDT</span>
+                            {% else %}
+                                <span class="amount-receive">+{{ tx.amount }} USDT</span>
+                            {% endif %}
+                            <div class="transaction-time">
+                                {{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <i class="fas fa-exchange-alt"></i>
+                <p>No transactions yet.</p>
+                <p style="color: rgba(255, 255, 255, 0.6);">Your transaction history will appear here.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize clipboard.js
+        new ClipboardJS('.btn-secondary');
+        
+        // Add copy button functionality
+        const copyBtn = document.querySelector('.btn-secondary');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', function() {
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                
+                setTimeout(function() {
+                    copyBtn.innerHTML = originalText;
+                }, 2000);
+            });
+        }
+        
+        // Check pending transaction status
+        const pendingTxs = document.querySelectorAll('.transaction-item .status-tag:contains("Pending")');
+        
+        function updateTransactionStatus(txElement) {
+            try {
+                const txHash = txElement.closest('.transaction-item').dataset.txHash;
+                
+                fetch('/api/check_transaction/' + txHash)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.status && data.status !== 'pending') {
+                            txElement.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
+                            txElement.classList.remove('pending');
+                            
+                            // Update background color based on status
+                            if (data.status === 'completed') {
+                                txElement.style.backgroundColor = 'var(--success-color)';
+                            } else if (data.status === 'failed') {
+                                txElement.style.backgroundColor = 'var(--danger-color)';
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error checking tx status:', error));
+            } catch (e) {
+                console.error('Error updating transaction:', e);
+            }
+        }
+        
+        // Check all pending transactions
+        if (pendingTxs.length > 0) {
+            pendingTxs.forEach(tx => {
+                updateTransactionStatus(tx);
+                
+                // Periodically check pending transactions
+                setInterval(() => {
+                    if (tx.textContent.toLowerCase().includes('pending')) {
+                        updateTransactionStatus(tx);
+                    }
+                }, 15000); // Check every 15 seconds
+            });
+        }
+    });
+</script>
+{% endblock %} 

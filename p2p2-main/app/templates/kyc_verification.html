@@ -1,0 +1,159 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-card">
+        <h2 class="dashboard-title">🛡️ KYC Verification</h2>
+        <p class="dashboard-subtitle">Verify your identity to get a Verified Seller Badge</p>
+        
+        {% if user.is_verified %}
+            <div class="verification-complete">
+                <div class="verification-icon">
+                    <i class="fas fa-shield-check" style="font-size: 4em; color: var(--success-color);"></i>
+                </div>
+                <h3>Verification Complete!</h3>
+                <p>Your account has been verified on {{ user.verification_date.strftime('%Y-%m-%d') }}</p>
+                <div class="badge-display">
+                    <span class="verified-badge">
+                        <i class="fas fa-shield-alt"></i> Verified Seller
+                    </span>
+                </div>
+                <p>This badge will appear next to your name throughout the platform, helping buyers identify you as a trusted seller.</p>
+                <a href="{{ url_for('profile') }}" class="btn btn-primary">Return to Profile</a>
+            </div>
+        {% else %}
+            <div class="verification-steps">
+                <div class="step-description">
+                    <h3>Why Verify Your Identity?</h3>
+                    <ul>
+                        <li><strong>Build Trust:</strong> Verified sellers receive more orders</li>
+                        <li><strong>Higher Visibility:</strong> Your listings appear higher in search results</li>
+                        <li><strong>Faster Payment Processing:</strong> Reduced hold times on payments</li>
+                        <li><strong>Dispute Priority:</strong> Faster resolution of any issues</li>
+                    </ul>
+                </div>
+                
+                <div class="verification-form">
+                    <h3>Submit Your Verification</h3>
+                    <p>To get verified, we need to confirm your identity with valid documents.</p>
+                    
+                    <form method="POST" action="{{ url_for('kyc_verification') }}" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="id_type">ID Type:</label>
+                            <select class="form-control" id="id_type" name="id_type" required>
+                                <option value="passport">Passport</option>
+                                <option value="drivers_license">Driver's License</option>
+                                <option value="national_id">National ID Card</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="id_front">Front of ID:</label>
+                            <input type="file" class="form-control" id="id_front" name="id_front" accept="image/*" required>
+                            <small>Please upload a clear image of the front of your ID</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="id_back">Back of ID:</label>
+                            <input type="file" class="form-control" id="id_back" name="id_back" accept="image/*" required>
+                            <small>Please upload a clear image of the back of your ID</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="selfie">Selfie with ID:</label>
+                            <input type="file" class="form-control" id="selfie" name="selfie" accept="image/*" required>
+                            <small>Please upload a photo of yourself holding your ID</small>
+                        </div>
+                        
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                            <label class="form-check-label" for="terms">I confirm that the information provided is accurate and belongs to me.</label>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 2rem;">
+                            <button type="submit" class="btn btn-primary">Submit Verification</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .verification-complete {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    .verification-icon {
+        margin-bottom: 1.5rem;
+    }
+    
+    .badge-display {
+        margin: 2rem 0;
+    }
+    
+    .verified-badge {
+        background-color: #28a745;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: bold;
+        box-shadow: 0 2px 10px rgba(40, 167, 69, 0.3);
+    }
+    
+    .verification-steps {
+        margin-top: 2rem;
+    }
+    
+    .step-description {
+        margin-bottom: 2rem;
+    }
+    
+    .step-description ul {
+        padding-left: 1.5rem;
+        margin-top: 1rem;
+    }
+    
+    .step-description li {
+        margin-bottom: 0.75rem;
+    }
+    
+    .verification-form {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 2rem;
+        border-radius: 8px;
+        margin-top: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-control {
+        background-color: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 4px;
+        padding: 0.75rem;
+        width: 100%;
+    }
+    
+    .form-control:focus {
+        background-color: rgba(255, 255, 255, 0.15);
+        border-color: var(--primary-color);
+        outline: none;
+    }
+    
+    .form-check {
+        margin-top: 1.5rem;
+    }
+    
+    small {
+        display: block;
+        color: rgba(255, 255, 255, 0.7);
+        margin-top: 0.5rem;
+    }
+</style>
+{% endblock %} 

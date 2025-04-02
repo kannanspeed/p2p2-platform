@@ -1,0 +1,690 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <h2 class="dashboard-title">Create a New Post</h2>
+    
+    <form id="post-form" method="POST" action="{{ url_for('create_post') }}">
+        <div class="form-group">
+            <label for="title" class="form-label">Product/Service Name *</label>
+            <input type="text" id="title" name="title" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="description" class="form-label">Description (Optional)</label>
+            <textarea id="description" name="description" class="form-control" rows="4"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Type *</label>
+            <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
+                <div class="form-check">
+                    <input type="radio" id="usdt" name="post_type" value="usdt" class="form-check-input" checked>
+                    <label for="usdt" class="form-check-label">USDT</label>
+                </div>
+                <div class="form-check">
+                    <input type="radio" id="service" name="post_type" value="service" class="form-check-input">
+                    <label for="service" class="form-check-label">Service</label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- USDT specific fields -->
+        <div id="usdt-fields" class="type-specific-fields">
+            <div class="form-group">
+                <label for="usdt_quantity" class="form-label">USDT Quantity *</label>
+                <input type="number" id="usdt_quantity" name="usdt_quantity" class="form-control" min="1" step="1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="usdt_price" class="form-label">Price per USDT *</label>
+                <input type="number" id="usdt_price" name="usdt_price" class="form-control" min="0" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="location" class="form-label">Location *</label>
+                <select id="location" name="location" class="form-control form-select" required>
+                    <option value="">Select Country</option>
+                    <option value="India">India</option>
+                    <option value="USA">USA</option>
+                    <option value="UK">UK</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Singapore">Singapore</option>
+                    <option value="UAE">UAE</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Payment Methods Accepted *</label>
+                <div class="payment-methods-container" style="margin-top: 0.5rem;">
+                    <div class="form-check">
+                        <input type="checkbox" id="payment_upi" name="payment_methods[]" value="upi" class="form-check-input">
+                        <label for="payment_upi" class="form-check-label">UPI</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="payment_bank" name="payment_methods[]" value="bank" class="form-check-input">
+                        <label for="payment_bank" class="form-check-label">Bank Transfer</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="payment_cash" name="payment_methods[]" value="cash" class="form-check-input">
+                        <label for="payment_cash" class="form-check-label">Cash</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" id="payment_other" name="payment_methods[]" value="other" class="form-check-input">
+                        <label for="payment_other" class="form-check-label">Other</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="custom_payment_div" class="form-group" style="display: none;">
+                <label for="custom_payment" class="form-label">Custom Payment Method</label>
+                <input type="text" id="custom_payment" name="custom_payment" class="form-control">
+            </div>
+            
+            <div class="form-group">
+                <label for="timeline_options_usdt" class="form-label">Completion Time *</label>
+                <select id="timeline_options_usdt" name="timeline_options" class="form-control form-select" required>
+                    <option value="15mins">15 minutes</option>
+                    <option value="30mins">30 minutes</option>
+                    <option value="1hr">1 hour</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Service specific fields -->
+        <div id="service-fields" class="type-specific-fields" style="display: none;">
+            <div class="form-group">
+                <label for="service_description" class="form-label">Service Description *</label>
+                <textarea id="service_description" name="description" class="form-control" rows="4" required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="location_service" class="form-label">Location *</label>
+                <select id="location_service" name="location" class="form-control form-select" required>
+                    <option value="">Select Country</option>
+                    <option value="India">India</option>
+                    <option value="USA">USA</option>
+                    <option value="UK">UK</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Singapore">Singapore</option>
+                    <option value="UAE">UAE</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="service_price" class="form-label">Service Price *</label>
+                <input type="number" id="service_price" name="price" class="form-control" min="0" step="0.01" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="timeline_options_service" class="form-label">Estimated Completion Time *</label>
+                <input type="text" id="timeline_options_service" name="timeline_options" class="form-control" placeholder="e.g. 2 days, 1 week, Custom" required>
+                <small style="color: rgba(255, 255, 255, 0.6);">Enter your custom completion time</small>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="payment_method" class="form-label" style="display: none;">Payment Method *</label>
+            <select id="payment_method" name="payment_method" class="form-control form-select" style="display: none;">
+                <option value="cash">Cash</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="upi">UPI</option>
+                <option value="other">Other (specify)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="payment_terms" class="form-label">Custom Payment Terms (Optional)</label>
+            <textarea id="payment_terms" name="payment_terms" class="form-control" rows="2" placeholder="e.g. 50% advance, remaining after delivery"></textarea>
+            <small style="color: rgba(255, 255, 255, 0.6);">Define specific payment terms for negotiation</small>
+        </div>
+        
+        <!-- Boost Listing Section -->
+        <div class="form-group nested-card" style="padding: 1rem; margin-top: 1.5rem; background-color: rgba(255, 107, 0, 0.1); border: 1px solid rgba(255, 107, 0, 0.3);">
+            <h4 style="margin-top: 0; color: #FF6B00;">📈 Boost Your Listing - 10 USDT</h4>
+            
+            <p style="color: rgba(255, 255, 255, 0.8);">
+                Featured listings appear at the top of the buyer's page and get marked as "Ad - Paid Promotion" for maximum visibility.
+            </p>
+            
+            <div class="form-check" style="margin: 1rem 0;">
+                <input type="checkbox" id="boost_listing" name="boost_listing" class="form-check-input">
+                <label for="boost_listing" class="form-check-label" style="font-weight: bold;">
+                    Yes, boost this listing (10 USDT will be deducted from your wallet)
+                </label>
+            </div>
+            
+            <div id="boost-payment-details" style="display: none; background-color: rgba(30, 30, 50, 0.7); padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+                <p style="margin-top: 0;">
+                    <strong>Your wallet balance:</strong> 
+                    <span id="wallet-balance">{{ current_user.wallet.balance if current_user.wallet else '0' }} USDT</span>
+                </p>
+                
+                <div id="insufficient-funds" style="display: none; color: #ff4d4d; margin: 0.5rem 0;">
+                    Insufficient funds. Please add more USDT to your wallet.
+                </div>
+                
+                <div id="sufficient-funds" style="display: none; color: #4dff4d; margin: 0.5rem 0;">
+                    You have sufficient funds. 10 USDT will be deducted when you post.
+                </div>
+                
+                <div style="margin-top: 1rem;">
+                    <small style="color: rgba(255, 255, 255, 0.6);">
+                        * Boost lasts for 7 days and places your listing at the top of search results.
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <div class="form-check">
+                <input type="checkbox" id="schedule_post" name="schedule_post" class="form-check-input">
+                <label for="schedule_post" class="form-check-label">Schedule Posting</label>
+            </div>
+        </div>
+        
+        <div id="schedule_options" style="display: none; margin-left: 1.5rem; border-left: 2px solid var(--primary-color); padding-left: 1rem;">
+            <div class="form-group">
+                <label for="schedule_date" class="form-label">Post on *</label>
+                <input type="datetime-local" id="schedule_date" name="schedule_date" class="form-control">
+            </div>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; margin-top: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <button type="button" id="save-draft-btn" class="btn-secondary">
+                <i class="fas fa-save" style="margin-right: 0.5rem;"></i> Save as Draft
+            </button>
+            <button type="button" id="preview-btn" class="btn-primary">Preview Post</button>
+        </div>
+    </form>
+</div>
+
+<!-- Preview Modal -->
+<div id="preview-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Preview Your Post</h3>
+            <button class="close-btn">&times;</button>
+        </div>
+        
+        <div class="preview-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 id="preview-title"></h3>
+                <div id="preview-boost-tag" style="display: none; background-color: #FF6B00; color: white; padding: 0.3rem 0.6rem; border-radius: 20px; font-size: 0.8rem;">BOOSTED</div>
+            </div>
+            
+            <p><strong style="color: white;">Type:</strong> <span id="preview-type"></span></p>
+            <p id="preview-calendar-p" style="display: none;"><strong style="color: white;">Calendar Booking:</strong> <span id="preview-calendar">Enabled</span></p>
+            <p><strong style="color: white;">Description:</strong> <span id="preview-description"></span></p>
+            <p><strong style="color: white;">Location:</strong> <span id="preview-location"></span></p>
+            <p><strong style="color: white;">Price:</strong> <span id="preview-regular-price"></span></p>
+            <p><strong style="color: white;">Payment Method:</strong> <span id="preview-payment"></span></p>
+            <p id="preview-payment-terms-p" style="display: none;"><strong style="color: white;">Payment Terms:</strong> <span id="preview-payment-terms"></span></p>
+            <p><strong style="color: white;">Timeline Options:</strong> <span id="preview-timeline"></span></p>
+            <p id="preview-scheduled-p" style="display: none;"><strong style="color: #64B6FF;">Scheduled to post on:</strong> <span id="preview-scheduled"></span></p>
+            <p id="preview-draft-p" style="display: none;"><strong style="color: #64B6FF;">Status:</strong> <span style="background-color: rgba(100, 182, 255, 0.2); padding: 2px 8px; border-radius: 4px;">Draft</span></p>
+            <p id="preview-boost-p" style="display: none;"><strong style="color: #FF6B00;">Boosted:</strong> This listing will be featured at the top of buyers' page (10 USDT payment)</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 1.5rem;">
+            <p style="color: rgba(255, 255, 255, 0.8);">Your post will be submitted in:</p>
+            <div class="timer" id="timer">10</div>
+            <form method="POST" action="{{ url_for('create_post') }}">
+                <input type="hidden" name="title" id="hidden-title">
+                <input type="hidden" name="description" id="hidden-description">
+                <input type="hidden" name="post_type" id="hidden-type">
+                <input type="hidden" name="price" id="hidden-price">
+                <input type="hidden" name="location" id="hidden-location">
+                <input type="hidden" name="payment_method" id="hidden-payment">
+                <input type="hidden" name="custom_payment" id="hidden-custom-payment">
+                <input type="hidden" name="payment_terms" id="hidden-payment-terms">
+                <input type="hidden" name="timeline_options" id="hidden-timeline">
+                <input type="hidden" name="enable_calendar" id="hidden-calendar">
+                <input type="hidden" name="boost_listing" id="hidden-boost">
+                <input type="hidden" name="schedule_post" id="hidden-schedule">
+                <input type="hidden" name="schedule_date" id="hidden-schedule-date">
+                <input type="hidden" name="is_draft" id="hidden-draft" value="false">
+                
+                <button type="submit" id="submit-btn" class="btn-create-post" disabled>Confirm & Post</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Boost Confirmation Modal -->
+<div id="boost-confirm-modal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirm Boost Payment</h3>
+            <button class="close-boost-btn">&times;</button>
+        </div>
+        
+        <div style="padding: 1.5rem;">
+            <p>You are about to boost your listing for <strong>10 USDT</strong>.</p>
+            <p>This will feature your post at the top of the buyers page for 7 days.</p>
+            <p style="margin-top: 1rem;"><strong>Current wallet balance:</strong> <span id="confirm-wallet-balance">{{ current_user.wallet.balance if current_user.wallet else '0' }} USDT</span></p>
+            <p><strong>After payment:</strong> <span id="confirm-remaining-balance">0 USDT</span></p>
+            
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <button id="confirm-boost-payment" class="btn-primary">Confirm Payment</button>
+                <button class="close-boost-btn btn-secondary" style="margin-left: 1rem;">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    const postForm = document.getElementById('post-form');
+    const customPaymentDiv = document.getElementById('custom_payment_div');
+    const schedulePostCheck = document.getElementById('schedule_post');
+    const scheduleOptions = document.getElementById('schedule_options');
+    const postTypeRadios = document.getElementsByName('post_type');
+    const usdtFields = document.getElementById('usdt-fields');
+    const serviceFields = document.getElementById('service-fields');
+    const previewBtn = document.getElementById('preview-btn');
+    const previewModal = document.getElementById('preview-modal');
+    const closeBtn = document.querySelector('.close-btn');
+    const saveDraftBtn = document.getElementById('save-draft-btn');
+    const boostListingCheck = document.getElementById('boost_listing');
+    const boostPaymentDetails = document.getElementById('boost-payment-details');
+    const walletBalance = parseFloat('{{ current_user.wallet.balance if current_user.wallet else "0" }}');
+    const insufficientFunds = document.getElementById('insufficient-funds');
+    const sufficientFunds = document.getElementById('sufficient-funds');
+    const boostConfirmModal = document.getElementById('boost-confirm-modal');
+    const closeBoostBtn = document.querySelectorAll('.close-boost-btn');
+    const confirmBoostPayment = document.getElementById('confirm-boost-payment');
+    const paymentOther = document.getElementById('payment_other');
+    
+    // Toggle between USDT and Service fields
+    for (let i = 0; i < postTypeRadios.length; i++) {
+        postTypeRadios[i].addEventListener('change', function() {
+            if (this.value === 'usdt') {
+                usdtFields.style.display = 'block';
+                serviceFields.style.display = 'none';
+            } else if (this.value === 'service') {
+                usdtFields.style.display = 'none';
+                serviceFields.style.display = 'block';
+            }
+        });
+    }
+    
+    // Show custom payment field if "Other" payment method is checked
+    paymentOther.addEventListener('change', function() {
+        if (this.checked) {
+            customPaymentDiv.style.display = 'block';
+        } else {
+            customPaymentDiv.style.display = 'none';
+        }
+    });
+        
+    // Toggle schedule options visibility
+    schedulePostCheck.addEventListener('change', function() {
+        if (this.checked) {
+            scheduleOptions.style.display = 'block';
+        } else {
+            scheduleOptions.style.display = 'none';
+        }
+    });
+    
+    // Handle boost listing checkbox
+    boostListingCheck.addEventListener('change', function() {
+        if (this.checked) {
+            boostPaymentDetails.style.display = 'block';
+            
+            // Check if user has enough funds
+            if (walletBalance < 10) {
+                insufficientFunds.style.display = 'block';
+                sufficientFunds.style.display = 'none';
+            } else {
+                insufficientFunds.style.display = 'none';
+                sufficientFunds.style.display = 'block';
+            }
+        } else {
+            boostPaymentDetails.style.display = 'none';
+        }
+    });
+    
+    // Preview functionality
+    previewBtn.addEventListener('click', function() {
+        // Get form data
+        const title = document.getElementById('title').value;
+        const postType = document.querySelector('input[name="post_type"]:checked').value;
+        let description, price, location, paymentMethod, timelineOptions;
+        
+        // Get type-specific data
+        if (postType === 'usdt') {
+            const usdtQuantity = document.getElementById('usdt_quantity').value;
+            const usdtPrice = document.getElementById('usdt_price').value;
+            description = document.getElementById('description').value || `USDT Quantity: ${usdtQuantity}, Price per USDT: ${usdtPrice}`;
+            location = document.getElementById('location').value;
+            
+            // Get selected payment methods
+            const paymentMethods = [];
+            document.querySelectorAll('input[name="payment_methods[]"]:checked').forEach(function(checkbox) {
+                paymentMethods.push(checkbox.value);
+            });
+            
+            if (paymentMethods.includes('other')) {
+                const customPayment = document.getElementById('custom_payment').value;
+                paymentMethods.push(`(${customPayment})`);
+            }
+            
+            paymentMethod = paymentMethods.join(', ');
+            timelineOptions = document.getElementById('timeline_options_usdt').value;
+            price = `${usdtQuantity} USDT at ${usdtPrice} each`;
+        } else { // service
+            description = document.getElementById('service_description').value;
+            location = document.getElementById('location_service').value;
+            price = document.getElementById('service_price').value;
+            paymentMethod = 'USDT';
+            timelineOptions = document.getElementById('timeline_options_service').value;
+        }
+        
+        const isScheduled = document.getElementById('schedule_post').checked;
+        const scheduledDate = document.getElementById('schedule_date').value;
+        const isBoosted = document.getElementById('boost_listing').checked;
+        
+        // Fill in preview data
+        document.getElementById('preview-title').textContent = title;
+        document.getElementById('preview-description').textContent = description || 'No description provided';
+        document.getElementById('preview-type').textContent = postType.charAt(0).toUpperCase() + postType.slice(1);
+        document.getElementById('preview-regular-price').textContent = price;
+        document.getElementById('preview-location').textContent = location || 'Not specified';
+        document.getElementById('preview-payment').textContent = paymentMethod;
+        
+        // Timeline options
+        document.getElementById('preview-timeline').textContent = timelineOptions;
+        
+        // Payment terms
+        const paymentTerms = document.getElementById('payment_terms').value;
+        if (paymentTerms) {
+            document.getElementById('preview-payment-terms-p').style.display = 'block';
+            document.getElementById('preview-payment-terms').textContent = paymentTerms;
+        } else {
+            document.getElementById('preview-payment-terms-p').style.display = 'none';
+        }
+        
+        // Calendar booking - check if calendar element exists first
+        document.getElementById('preview-calendar-p').style.display = 'none';
+        
+        // Scheduled posting
+        if (isScheduled) {
+            document.getElementById('preview-scheduled-p').style.display = 'block';
+            document.getElementById('preview-scheduled').textContent = new Date(scheduledDate).toLocaleString();
+        } else {
+            document.getElementById('preview-scheduled-p').style.display = 'none';
+        }
+        
+        // Show draft status
+        document.getElementById('preview-draft-p').style.display = 'block';
+        
+        // Boost listing
+        if (isBoosted) {
+            document.getElementById('preview-boost-tag').style.display = 'inline-block';
+            document.getElementById('preview-boost-p').style.display = 'block';
+        } else {
+            document.getElementById('preview-boost-tag').style.display = 'none';
+            document.getElementById('preview-boost-p').style.display = 'none';
+        }
+            
+        // Set hidden form values
+        document.getElementById('hidden-title').value = title;
+        document.getElementById('hidden-description').value = description;
+        document.getElementById('hidden-type').value = postType;
+        
+        if (postType === 'usdt') {
+            const usdtQuantity = document.getElementById('usdt_quantity').value;
+            const usdtPrice = document.getElementById('usdt_price').value;
+            document.getElementById('hidden-price').value = usdtQuantity + ' USDT at ' + usdtPrice + ' each';
+            document.getElementById('hidden-location').value = document.getElementById('location').value;
+            document.getElementById('hidden-timeline').value = document.getElementById('timeline_options_usdt').value;
+        } else {
+            document.getElementById('hidden-price').value = document.getElementById('service_price').value;
+            document.getElementById('hidden-location').value = document.getElementById('location_service').value;
+            document.getElementById('hidden-timeline').value = document.getElementById('timeline_options_service').value;
+        }
+        
+        document.getElementById('hidden-payment').value = paymentMethod;
+        document.getElementById('hidden-custom-payment').value = document.getElementById('custom_payment').value;
+        document.getElementById('hidden-payment-terms').value = paymentTerms;
+        document.getElementById('hidden-calendar').value = ''; // Default to empty since we don't have a calendar option
+        document.getElementById('hidden-boost').value = isBoosted ? 'on' : '';
+        document.getElementById('hidden-schedule').value = isScheduled ? 'on' : '';
+        document.getElementById('hidden-schedule-date').value = scheduledDate;
+        
+        // Show the preview modal
+        previewModal.style.display = 'flex';
+        
+        // Start countdown timer and enable submit button after 10 seconds
+        const submitBtn = document.getElementById('submit-btn');
+        const timerElement = document.getElementById('timer');
+        let timeLeft = 10;
+        
+        // Make submit button partially visible during countdown
+        submitBtn.style.opacity = '0.5';
+        
+        timerElement.textContent = timeLeft;
+        const countdownInterval = setInterval(() => {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                submitBtn.removeAttribute('disabled');
+                submitBtn.style.opacity = '1';
+            }
+        }, 1000);
+    });
+    
+    // Close preview modal
+    closeBtn.addEventListener('click', function() {
+        previewModal.style.display = 'none';
+    });
+    
+    // Save as draft
+    saveDraftBtn.addEventListener('click', function() {
+        const title = document.getElementById('title').value;
+        const postType = document.querySelector('input[name="post_type"]:checked').value;
+        let description, price, location, timelineOptions;
+        
+        // Get type-specific data
+        if (postType === 'usdt') {
+            description = document.getElementById('description').value;
+            const usdtQuantity = document.getElementById('usdt_quantity').value;
+            const usdtPrice = document.getElementById('usdt_price').value;
+            price = usdtQuantity + ' USDT at ' + usdtPrice + ' each';
+            location = document.getElementById('location').value;
+            timelineOptions = document.getElementById('timeline_options_usdt').value;
+        } else { // service
+            description = document.getElementById('service_description').value;
+            price = document.getElementById('service_price').value;
+            location = document.getElementById('location_service').value;
+            timelineOptions = document.getElementById('timeline_options_service').value;
+        }
+        
+        // Get payment methods
+        const paymentMethods = [];
+        document.querySelectorAll('input[name="payment_methods[]"]:checked').forEach(function(checkbox) {
+            paymentMethods.push(checkbox.value);
+        });
+        
+        const paymentMethod = paymentMethods.join(', ');
+        
+        // Set hidden form values
+        document.getElementById('hidden-title').value = title;
+        document.getElementById('hidden-description').value = description;
+        document.getElementById('hidden-type').value = postType;
+        document.getElementById('hidden-price').value = price;
+        document.getElementById('hidden-location').value = location;
+        document.getElementById('hidden-payment').value = paymentMethod;
+        document.getElementById('hidden-custom-payment').value = document.getElementById('custom_payment').value;
+        document.getElementById('hidden-payment-terms').value = document.getElementById('payment_terms').value;
+        document.getElementById('hidden-timeline').value = timelineOptions;
+        document.getElementById('hidden-calendar').value = ''; // Default to empty since we don't have a calendar option
+        document.getElementById('hidden-boost').value = document.getElementById('boost_listing').checked ? 'on' : '';
+        document.getElementById('hidden-schedule').value = document.getElementById('schedule_post').checked ? 'on' : '';
+        document.getElementById('hidden-schedule-date').value = document.getElementById('schedule_date').value;
+        document.getElementById('hidden-draft').value = 'true';
+        
+        // Submit the form
+        document.querySelector('form[action*="create_post"]').submit();
+    });
+
+    // Close boost confirmation modal
+    closeBoostBtn.forEach(btn => {
+        btn.addEventListener('click', function() {
+            boostConfirmModal.style.display = 'none';
+        });
+    });
+
+    // Handle boost payment confirmation
+    confirmBoostPayment.addEventListener('click', function() {
+        boostConfirmModal.style.display = 'none';
+        previewBtn.click(); // Show preview after confirming boost
+    });
+    });
+</script>
+
+<!-- Add CSS for boost feature and draft mode -->
+<style>
+.nested-card {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+#boost-payment-details {
+    transition: all 0.3s ease;
+}
+
+#timer {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 1rem 0;
+    color: var(--primary-color);
+}
+
+.form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+</style>
+
+<!-- Add this to fix modals: -->
+<style>
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+    overflow-y: auto;
+}
+
+.modal-content {
+    background-color: #121930;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 90%;
+    margin: 30px auto;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-title {
+    margin: 0;
+    color: white;
+}
+
+.close-btn, .close-boost-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.close-btn:hover, .close-boost-btn:hover {
+    color: white;
+}
+
+.preview-box {
+    padding: 1.5rem;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin: 1.5rem;
+}
+
+.preview-box p {
+    margin: 0.75rem 0;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.btn-create-post {
+    display: inline-block;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.btn-create-post:hover {
+    background-color: #4a7aff;
+    transform: translateY(-2px);
+}
+
+.btn-create-post:disabled {
+    background-color: rgba(74, 122, 255, 0.5);
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Fix for select dropdowns */
+select.form-control, select.form-select {
+    background-color: #121930;
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    appearance: auto;
+}
+
+select.form-control option, select.form-select option {
+    background-color: #121930;
+    color: white;
+}
+
+select.form-control option:checked, select.form-select option:checked {
+    background-color: #1E2747;
+    color: white;
+}
+
+select.form-control option:hover, select.form-select option:hover {
+    background-color: #2A3A6A;
+}
+</style>
+{% endblock %} 

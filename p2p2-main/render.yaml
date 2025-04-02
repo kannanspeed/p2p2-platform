@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: p2p2
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: FLASK_APP
+        value: app.py
+      - key: FLASK_ENV
+        value: production
+    healthCheckPath: /

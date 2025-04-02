@@ -1,0 +1,593 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <h2 class="dashboard-title">Order Details</h2>
+    
+    <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem;">
+        <div style="flex: 1; min-width: 300px;">
+            <h3 class="section-title">Product/Service</h3>
+            <p style="color: rgba(255, 255, 255, 0.9);"><strong style="color: white;">{{ order.post.title }}</strong> ({{ order.post.post_type.capitalize() }})</p>
+            <p style="color: rgba(255, 255, 255, 0.8);">{{ order.post.description or 'No description provided.' }}</p>
+        </div>
+        
+        <div style="flex: 1; min-width: 300px;">
+            <h3 class="section-title">Order Information</h3>
+            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
+                <strong style="color: white;">Status:</strong> 
+                <span class="status-tag" style="background-color: 
+                    {% if order.status == 'completed' %}var(--success-color)
+                    {% elif order.status == 'canceled' %}var(--danger-color)
+                    {% elif order.status == 'disputed' %}#f59f00
+                    {% else %}var(--secondary-color){% endif %}">
+                    {{ order.status.capitalize() }}
+                </span>
+            </p>
+            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Timeline:</strong> {{ order.timeline_selected }}</p>
+            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Payment Method:</strong> 
+                {% if order.post.payment_method == 'other' %}
+                    {{ order.post.custom_payment }}
+                {% else %}
+                    {{ order.post.payment_method.capitalize() }}
+                {% endif %}
+            </p>
+            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Order Date:</strong> {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+    </div>
+    
+    <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem;">
+        <div style="flex: 1; min-width: 300px;">
+            <h3 class="section-title">Buyer</h3>
+            <p style="color: rgba(255, 255, 255, 0.8);">{{ order.buyer.username }}</p>
+        </div>
+        
+        <div style="flex: 1; min-width: 300px;">
+            <h3 class="section-title">Seller</h3>
+            <p style="color: rgba(255, 255, 255, 0.8);">{{ order.post.seller.username }}</p>
+        </div>
+    </div>
+    
+    <!-- Order Timer -->
+    {% if order.status == 'pending' %}
+        <div class="nested-card" style="text-align: center; margin-bottom: 2rem;">
+            <h3 class="nested-card-title">Time Remaining</h3>
+            <div class="timer" id="order-timer" data-created="{{ order.created_at.isoformat() }}" data-timeline="{{ order.timeline_selected }}">
+                <span class="text-success">Loading timer...</span>
+            </div>
+        </div>
+    {% endif %}
+    
+    <!-- Chat Section -->
+    <div class="nested-card">
+        <h3 class="nested-card-title">Live Chat</h3>
+        
+        <div class="chat-box" id="chat-box">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="message {% if message.user_id == session['user_id'] %}message-receiver{% else %}message-sender{% endif %}" data-message-id="{{ message.id }}">
+                        <strong>{{ message.user.username }}</strong>
+                        <p>{{ message.content }}</p>
+                        <div class="message-time">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <p style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);" id="no-messages">No messages yet. Start the conversation!</p>
+            {% endif %}
+        </div>
+        
+        <div id="message-form" class="message-form">
+            <div class="form-group">
+                <textarea id="message-input" class="form-control" rows="3" placeholder="Type your message here..." required></textarea>
+            </div>
+            <div style="text-align: right;">
+                <button id="send-button" class="btn-view-details">Send Message</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add this section to the chat area -->
+    <div id="message-tools" style="padding: 0.5rem; background-color: rgba(255, 255, 255, 0.05); margin-bottom: 1rem; border-radius: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <button id="templates-btn" class="btn-secondary btn-sm">
+                <i class="fas fa-reply" style="margin-right: 0.5rem;"></i> Quick Responses
+            </button>
+            <div>
+                <span id="typing-indicator" style="display: none; font-size: 0.9rem; font-style: italic; color: var(--secondary-color);">
+                    <i class="fas fa-keyboard" style="margin-right: 0.3rem;"></i> Typing...
+                </span>
+            </div>
+        </div>
+        
+        <div id="templates-container" style="display: none; background-color: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+            <h4 style="margin-top: 0; margin-bottom: 1rem; font-size: 1rem;">Quick Response Templates</h4>
+            <div class="templates-grid">
+                <div class="template-item" data-message="Hi, thank you for your order! I'll get started on it right away.">
+                    <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i> Order Confirmation
+                </div>
+                <div class="template-item" data-message="Your order is being processed. I'll keep you updated on the progress.">
+                    <i class="fas fa-spinner" style="margin-right: 0.5rem;"></i> Processing Update
+                </div>
+                <div class="template-item" data-message="Your order is ready! How would you like to proceed with delivery/pickup?">
+                    <i class="fas fa-box" style="margin-right: 0.5rem;"></i> Order Ready
+                </div>
+                <div class="template-item" data-message="I have a question about your order. Could you please provide more details?">
+                    <i class="fas fa-question-circle" style="margin-right: 0.5rem;"></i> Question
+                </div>
+                <div class="template-item" data-message="I've sent you the payment. Please confirm once received.">
+                    <i class="fas fa-money-bill" style="margin-right: 0.5rem;"></i> Payment Sent
+                </div>
+                <div class="template-item" data-message="Payment received, thank you!">
+                    <i class="fas fa-money-check" style="margin-right: 0.5rem;"></i> Payment Received
+                </div>
+                <div class="template-item" data-message="Your order has been shipped. Here's the tracking information: [Insert tracking number]">
+                    <i class="fas fa-shipping-fast" style="margin-right: 0.5rem;"></i> Shipping Update
+                </div>
+                <div class="template-item" data-message="Thank you for choosing my service! Please consider leaving a review.">
+                    <i class="fas fa-star" style="margin-right: 0.5rem;"></i> Thank You
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add this to messages in the chat area -->
+    <div class="message-status">
+        <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
+            Delivered
+            <span class="read-receipt" style="margin-left: 0.3rem; color: var(--primary-color);">
+                <i class="fas fa-check-double"></i> Read
+            </span>
+        </small>
+    </div>
+    
+    <!-- Order Actions -->
+    <div class="nested-card" style="margin-top: 2rem;">
+        <h3 class="nested-card-title">Order Actions</h3>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
+            {% if order.status == 'pending' %}
+                {% if session['user_id'] == order.post.seller_id %}
+                    <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}">
+                        <input type="hidden" name="status" value="completed">
+                        <button type="submit" class="btn-success">Mark as Completed</button>
+                    </form>
+                {% endif %}
+                
+                <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}">
+                    <input type="hidden" name="status" value="canceled">
+                    <button type="submit" class="btn-danger">Cancel Order</button>
+                </form>
+            {% endif %}
+            
+            <button type="button" class="btn-secondary" id="complaint-btn">File a Complaint</button>
+        </div>
+    </div>
+    
+    <!-- Complaint Form (Initially Hidden) -->
+    <div id="complaint-form" class="nested-card" style="margin-top: 2rem; display: none;">
+        <h3 class="nested-card-title">File a Complaint</h3>
+        
+        <form method="POST" action="{{ url_for('file_complaint', order_id=order.id) }}">
+            <div class="form-group">
+                <label for="complaint-content" class="form-label">Describe your issue</label>
+                <textarea id="complaint-content" name="content" class="form-control" rows="4" required></textarea>
+            </div>
+            <div style="text-align: right;">
+                <button type="submit" class="btn-danger">Submit Complaint</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Socket.IO JavaScript -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Connect to Socket.IO server
+        const socket = io();
+        const userId = {{ session['user_id'] }};
+        const orderId = {{ order.id }};
+        const chatBox = document.getElementById('chat-box');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const noMessagesElement = document.getElementById('no-messages');
+        
+        // Order timer functionality
+        const orderTimer = document.getElementById('order-timer');
+        if (orderTimer) {
+            // Get the timeline string
+            const timelineStr = orderTimer.getAttribute('data-timeline').trim();
+            
+            // Default to 15 minutes (900 seconds)
+            let totalSeconds = 900;
+            
+            // Simple parsing for common timelines
+            if (timelineStr === "15mins") {
+                totalSeconds = 15 * 60;
+            } else if (timelineStr === "30mins") {
+                totalSeconds = 30 * 60;
+            } else if (timelineStr === "1 hour") {
+                totalSeconds = 60 * 60;
+            } else if (timelineStr === "2 hours") {
+                totalSeconds = 2 * 60 * 60;
+            } else if (timelineStr === "4 hours") {
+                totalSeconds = 4 * 60 * 60;
+            } else if (timelineStr === "1 day") {
+                totalSeconds = 24 * 60 * 60;
+            } else {
+                // Try to extract numbers using regex
+                const match = timelineStr.match(/(\d+)/);
+                if (match) {
+                    const value = parseInt(match[0]);
+                    if (timelineStr.includes('min')) {
+                        totalSeconds = value * 60;
+                    } else if (timelineStr.includes('hour')) {
+                        totalSeconds = value * 60 * 60;
+                    } else if (timelineStr.includes('day')) {
+                        totalSeconds = value * 24 * 60 * 60;
+                    }
+                }
+            }
+            
+            console.log(`Starting timer with ${totalSeconds} seconds`);
+            
+            // Set the initial display
+            updateTimerDisplay(totalSeconds);
+            
+            // Start the timer
+            const timerInterval = setInterval(function() {
+                totalSeconds--;
+                
+                if (totalSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    orderTimer.innerHTML = `<span style="color: #ff6b6b;">Time's up!</span>`;
+                    orderTimer.classList.add('time-expired');
+                    
+                    // Auto-cancel the order if it's still pending
+                    if ("{{ order.status }}" === "pending") {
+                        // Show notification to user
+                        const notification = document.createElement('div');
+                        notification.className = 'notification error';
+                        notification.innerHTML = `
+                            <p>The order time has expired and will be automatically canceled.</p>
+                            <div class="notification-countdown">Canceling in <span id="cancel-countdown">10</span> seconds...</div>
+                        `;
+                        document.querySelector('.dashboard-card').prepend(notification);
+                        
+                        // Add countdown to cancel
+                        let cancelSeconds = 10;
+                        const cancelInterval = setInterval(function() {
+                            cancelSeconds--;
+                            document.getElementById('cancel-countdown').textContent = cancelSeconds;
+                            
+                            if (cancelSeconds <= 0) {
+                                clearInterval(cancelInterval);
+                                // Submit the cancel form
+                                const cancelForm = document.querySelector('form[action*="update_order_status"][action*="{{ order.id }}"]');
+                                if (cancelForm) {
+                                    cancelForm.querySelector('input[name="status"]').value = 'canceled';
+                                    cancelForm.submit();
+                                } else {
+                                    // If form not found, use AJAX
+                                    fetch('/update_order_status/{{ order.id }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/x-www-form-urlencoded',
+                                        },
+                                        body: 'status=canceled'
+                                    }).then(() => {
+                                        window.location.reload();
+                                    });
+                                }
+                            }
+                        }, 1000);
+                    }
+                    
+                    return;
+                }
+                
+                updateTimerDisplay(totalSeconds);
+            }, 1000);
+            
+            // Helper function to update the timer display
+            function updateTimerDisplay(seconds) {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const remainingSeconds = seconds % 60;
+                
+                let timeString = '';
+                
+                if (hours > 0) {
+                    timeString += `${hours}h `;
+                }
+                
+                timeString += `${minutes}m ${remainingSeconds}s`;
+                
+                let colorClass = 'text-success';
+                if (seconds < 300) { // less than 5 minutes
+                    colorClass = 'text-danger';
+                } else if (seconds < 600) { // less than 10 minutes
+                    colorClass = 'text-warning';
+                }
+                
+                orderTimer.innerHTML = `<span class="${colorClass}">${timeString}</span>`;
+            }
+        }
+        
+        // Join the room for this order
+        socket.emit('join', { order_id: orderId });
+        
+        // Send message handler
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            
+            if (message) {
+                // Emit message to server
+                socket.emit('send_message', {
+                    order_id: orderId,
+                    user_id: userId,
+                    message: message
+                });
+                
+                // Clear input field
+                messageInput.value = '';
+            }
+        }
+        
+        // Send button click handler
+        sendButton.addEventListener('click', sendMessage);
+        
+        // Enter key press handler
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // Handle receiving new messages
+        socket.on('new_message', function(data) {
+            // Remove "no messages" text if it exists
+            if (noMessagesElement) {
+                noMessagesElement.remove();
+            }
+            
+            // Create new message element
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message ' + (data.user_id === userId ? 'message-receiver' : 'message-sender');
+            messageElement.dataset.messageId = data.id;
+            
+            // Create message content
+            messageElement.innerHTML = `
+                <strong>${data.username}</strong>
+                <p>${data.content}</p>
+                <div class="message-time">${data.time}</div>
+            `;
+            
+            // Add to chat box
+            chatBox.appendChild(messageElement);
+            
+            // Scroll to bottom
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+        
+        // Initial scroll to bottom
+        chatBox.scrollTop = chatBox.scrollHeight;
+        
+        // Complaint button handler
+        const complaintBtn = document.getElementById('complaint-btn');
+        const complaintForm = document.getElementById('complaint-form');
+        
+        complaintBtn.addEventListener('click', function() {
+            complaintForm.style.display = complaintForm.style.display === 'none' ? 'block' : 'none';
+        });
+        
+        // Quick response templates
+        const templatesBtn = document.getElementById('templates-btn');
+        const templatesContainer = document.getElementById('templates-container');
+        const templateItems = document.querySelectorAll('.template-item');
+        
+        if (templatesBtn) {
+            templatesBtn.addEventListener('click', function() {
+                if (templatesContainer.style.display === 'none') {
+                    templatesContainer.style.display = 'block';
+                } else {
+                    templatesContainer.style.display = 'none';
+                }
+            });
+        }
+        
+        templateItems.forEach(item => {
+            item.addEventListener('click', function() {
+                const message = this.getAttribute('data-message');
+                if (messageInput) {
+                    messageInput.value = message;
+                    messageInput.focus();
+                    templatesContainer.style.display = 'none';
+                }
+            });
+        });
+        
+        // Typing indicator simulation
+        const typingIndicator = document.getElementById('typing-indicator');
+        let typingTimeout;
+        
+        // Simulate receiving typing indicator from other user
+        function simulateTypingIndicator() {
+            if (typingIndicator) {
+                // 30% chance to show typing indicator
+                if (Math.random() < 0.3) {
+                    typingIndicator.style.display = 'inline-block';
+                    
+                    // Hide after random time between 2-8 seconds
+                    const hideAfter = 2000 + Math.random() * 6000;
+                    clearTimeout(typingTimeout);
+                    typingTimeout = setTimeout(() => {
+                        typingIndicator.style.display = 'none';
+                        
+                        // 40% chance to also simulate receiving a message
+                        if (Math.random() < 0.4) {
+                            simulateIncomingMessage();
+                        }
+                    }, hideAfter);
+                }
+            }
+        }
+        
+        // Simulate incoming message (for demo purposes)
+        function simulateIncomingMessage() {
+            const chatContainer = document.getElementById('chat-messages');
+            
+            if (chatContainer) {
+                const randomResponses = [
+                    "How's the order coming along?",
+                    "Thanks for the update!",
+                    "Let me know if you have any questions.",
+                    "Perfect, looking forward to it!",
+                    "That works for me."
+                ];
+                
+                const randomMessage = randomResponses[Math.floor(Math.random() * randomResponses.length)];
+                
+                // In a real app, this would be an AJAX call to save and then retrieve messages
+                // For demo, we'll just append to the DOM
+                const messageHtml = `
+                    <div class="chat-message received">
+                        <div class="message-content">
+                            ${randomMessage}
+                        </div>
+                        <div class="message-meta">
+                            <small>just now</small>
+                        </div>
+                    </div>
+                `;
+                
+                chatContainer.insertAdjacentHTML('beforeend', messageHtml);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+        
+        // Periodically check for typing indicator (in a real app, this would be websocket-driven)
+        setInterval(simulateTypingIndicator, 10000);
+        
+        // Send typing indicator when user is typing
+        if (messageInput) {
+            let lastTypingSignal = 0;
+            
+            messageInput.addEventListener('input', function() {
+                const now = Date.now();
+                
+                // Only send typing signal maximum once every 3 seconds
+                if (now - lastTypingSignal > 3000) {
+                    // In a real app, this would be a websocket call to notify the other user
+                    console.log('User is typing...');
+                    lastTypingSignal = now;
+                }
+            });
+        }
+        
+        // Initialize read receipts for sent messages
+        const updateReadReceipts = () => {
+            const sentMessages = document.querySelectorAll('.chat-message.sent');
+            
+            sentMessages.forEach((message, index) => {
+                const readReceipt = message.querySelector('.read-receipt');
+                
+                if (readReceipt) {
+                    // In a real app, this status would come from the server
+                    // For demo, mark older messages as read (80% chance)
+                    if (index < sentMessages.length - 1 || Math.random() < 0.8) {
+                        readReceipt.innerHTML = '<i class="fas fa-check-double"></i> Read';
+                        readReceipt.style.color = 'var(--primary-color)';
+                    } else {
+                        readReceipt.innerHTML = '<i class="fas fa-check"></i> Delivered';
+                        readReceipt.style.color = 'rgba(255, 255, 255, 0.6)';
+                    }
+                }
+            });
+        };
+        
+        // Update read receipts initially and periodically
+        updateReadReceipts();
+        setInterval(updateReadReceipts, 5000);
+    });
+</script>
+
+<style>
+    .templates-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .templates-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    
+    .template-item {
+        padding: 0.5rem;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
+        font-size: 0.9rem;
+    }
+    
+    .template-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    /* Timer styles */
+    .timer {
+        font-size: 2rem;
+        font-weight: bold;
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .time-expired {
+        animation: pulse 1.5s infinite;
+    }
+    
+    .text-success {
+        color: #28a745;
+    }
+    
+    .text-warning {
+        color: #ffc107;
+    }
+    
+    .text-danger {
+        color: #dc3545;
+    }
+    
+    /* Notification styles */
+    .notification {
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+    }
+    
+    .notification.error {
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 1px solid rgba(220, 53, 69, 0.5);
+    }
+    
+    .notification p {
+        margin-bottom: 0.5rem;
+    }
+    
+    .notification-countdown {
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+</style>
+{% endblock %} 

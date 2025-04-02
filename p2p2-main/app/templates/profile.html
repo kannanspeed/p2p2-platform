@@ -1,0 +1,901 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="profile-container">
+    {% if not user.phone_number or not user.dob or not user.location %}
+    <div class="profile-warning">
+        <div class="warning-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="warning-content">
+            <h3>Complete Your Profile</h3>
+            <p>Your profile is incomplete. Please provide the following information:</p>
+            <ul>
+                {% if not user.phone_number %}<li>Phone Number</li>{% endif %}
+                {% if not user.dob %}<li>Date of Birth</li>{% endif %}
+                {% if not user.location %}<li>Location</li>{% endif %}
+            </ul>
+            <button id="complete-profile-btn" class="btn-primary">Complete Profile</button>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="dashboard-card">
+        <div class="profile-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+                <h2 class="dashboard-title">My Profile</h2>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    {% if user.is_verified %}
+                    <span class="status-tag" style="background-color: var(--success-color);">
+                        <i class="fas fa-shield-alt" style="margin-right: 0.5rem;"></i> Verified Seller
+                    </span>
+                    {% else %}
+                    <a href="{{ url_for('kyc_verification') }}" class="status-tag" style="background-color: var(--secondary-color); text-decoration: none;">
+                        <i class="fas fa-shield-alt" style="margin-right: 0.5rem;"></i> Get Verified
+                    </a>
+                    {% endif %}
+                    <span class="status-tag" style="background-color: var(--primary-color);">
+                        Member since {{ user.created_at.strftime('%b %d, %Y') }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="profile-info-container">
+                <div class="profile-info-section">
+                    <h3 class="section-title">Account Information</h3>
+                    <div class="nested-card">
+                        <div class="info-row">
+                            <span class="info-label">Username:</span>
+                            <span class="info-value">{{ user.username }}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Email:</span>
+                            <span class="info-value">{{ user.email }}</span>
+                        </div>
+                        
+                        <!-- Reputation Score -->
+                        <div style="margin-top: 1rem; background-color: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px;">
+                            <h4 style="margin-bottom: 0.5rem;">Reputation Score</h4>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div style="width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-color); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold;">
+                                    {{ user.reputation_score|default('4.8') }}
+                                </div>
+                                <div>
+                                    <div style="display: flex; margin-bottom: 0.3rem;">
+                                        {% for i in range(5) %}
+                                            {% if i < user.reputation_score|default(4.8)|int %}
+                                                <i class="fas fa-star" style="color: gold; margin-right: 0.2rem;"></i>
+                                            {% elif i < user.reputation_score|default(4.8) %}
+                                                <i class="fas fa-star-half-alt" style="color: gold; margin-right: 0.2rem;"></i>
+                                            {% else %}
+                                                <i class="far fa-star" style="color: gold; margin-right: 0.2rem;"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <p style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">Based on {{ user.total_reviews|default(12) }} reviews</p>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 1rem;">
+                                <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                                    <div style="flex: 0 0 100px;">As Seller:</div>
+                                    <div class="progress-bar">
+                                        <div class="progress" style="width: {{ user.seller_rating_percentage|default(95) }}%;"></div>
+                                    </div>
+                                    <div style="margin-left: 0.5rem;">{{ user.seller_rating|default(4.9) }}</div>
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <div style="flex: 0 0 100px;">As Buyer:</div>
+                                    <div class="progress-bar">
+                                        <div class="progress" style="width: {{ user.buyer_rating_percentage|default(85) }}%;"></div>
+                                    </div>
+                                    <div style="margin-left: 0.5rem;">{{ user.buyer_rating|default(4.7) }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr style="margin: 1rem 0; border-color: rgba(255, 255, 255, 0.1);">
+                        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button id="edit-profile-btn" class="btn-view-details">
+                                <i class="fas fa-user-edit" style="margin-right: 0.5rem;"></i> Edit Profile
+                            </button>
+                            <button id="change-password-btn" class="btn-secondary">
+                                <i class="fas fa-lock" style="margin-right: 0.5rem;"></i> Change Password
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="profile-info-section">
+                    <h3 class="section-title">Activity Summary</h3>
+                    <div class="nested-card">
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <div style="flex: 1; background-color: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <h4 style="color: var(--status-blue); font-size: 1.5rem;">{{ posts|length }}</h4>
+                                <p style="color: rgba(255, 255, 255, 0.8);">Listings</p>
+                            </div>
+                            <div style="flex: 1; background-color: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <h4 style="color: var(--status-blue); font-size: 1.5rem;">{{ buyer_orders|length }}</h4>
+                                <p style="color: rgba(255, 255, 255, 0.8);">Purchases</p>
+                            </div>
+                            <div style="flex: 1; background-color: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <h4 style="color: var(--status-blue); font-size: 1.5rem;">{{ seller_orders|length }}</h4>
+                                <p style="color: rgba(255, 255, 255, 0.8);">Sales</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="nested-card">
+                <h3 class="section-title">Recent Activity</h3>
+                
+                <div class="tab-navigation">
+                    <a href="#" class="tab-button active" id="tab-listings">My Listings</a>
+                    <a href="#" class="tab-button" id="tab-purchases">My Purchases</a>
+                    <a href="#" class="tab-button" id="tab-sales">My Sales</a>
+                    <a href="#" class="tab-button" id="tab-reviews">Reviews</a>
+                </div>
+                
+                <div id="listings-content">
+                    {% if posts %}
+                        <div class="grid">
+                            {% for post in posts[:3] %}
+                                <div class="post-item">
+                                    {% if post.post_type == 'service' %}
+                                        <span class="tag-service">Service</span>
+                                    {% else %}
+                                        <span class="tag-product">Product</span>
+                                    {% endif %}
+                                    <h3 class="post-title">{{ post.title }}</h3>
+                                    <p class="post-desc">{{ post.description[:100] }}{% if post.description|length > 100 %}...{% endif %}</p>
+                                    <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 1rem;">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                    <div style="text-align: center; margin-top: 1rem;">
+                                        <a href="{{ url_for('post_detail', post_id=post.id) }}" class="btn-view-details">View Details</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if posts|length > 3 %}
+                            <div style="text-align: center; margin-top: 1.5rem;">
+                                <a href="{{ url_for('seller_dashboard') }}" class="btn-secondary">View All Listings</a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-tag"></i>
+                            <p>You haven't created any listings yet.</p>
+                            <a href="{{ url_for('create_post') }}" class="btn-create-post" style="margin-top: 1rem;">Create a Listing</a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div id="purchases-content" style="display: none;">
+                    {% if buyer_orders %}
+                        <div class="grid">
+                            {% for order in buyer_orders[:3] %}
+                                <div class="post-item">
+                                    <span class="status-tag" style="background-color: 
+                                        {% if order.status == 'completed' %}var(--success-color)
+                                        {% elif order.status == 'canceled' %}var(--danger-color)
+                                        {% elif order.status == 'disputed' %}#f59f00
+                                        {% else %}var(--secondary-color){% endif %}">
+                                        {{ order.status.capitalize() }}
+                                    </span>
+                                    <h3 class="post-title">{{ order.post.title }}</h3>
+                                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Seller:</strong> {{ order.post.seller.username }}</p>
+                                    <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 1rem;">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                    <div style="text-align: center; margin-top: 1rem;">
+                                        <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn-view-details">View Details</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if buyer_orders|length > 3 %}
+                            <div style="text-align: center; margin-top: 1.5rem;">
+                                <a href="{{ url_for('order_history') }}" class="btn-secondary">View All Purchases</a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-shopping-bag"></i>
+                            <p>You haven't made any purchases yet.</p>
+                            <a href="{{ url_for('buyer_dashboard') }}" class="btn-create-post" style="margin-top: 1rem;">Browse Products</a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div id="sales-content" style="display: none;">
+                    {% if seller_orders %}
+                        <div class="grid">
+                            {% for order in seller_orders[:3] %}
+                                <div class="post-item">
+                                    <span class="status-tag" style="background-color: 
+                                        {% if order.status == 'completed' %}var(--success-color)
+                                        {% elif order.status == 'canceled' %}var(--danger-color)
+                                        {% elif order.status == 'disputed' %}#f59f00
+                                        {% else %}var(--secondary-color){% endif %}">
+                                        {{ order.status.capitalize() }}
+                                    </span>
+                                    <h3 class="post-title">{{ order.post.title }}</h3>
+                                    <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Buyer:</strong> {{ order.buyer.username }}</p>
+                                    <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; margin-bottom: 1rem;">{{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                                    <div style="text-align: center; margin-top: 1rem;">
+                                        <a href="{{ url_for('order_detail', order_id=order.id) }}" class="btn-view-details">View Details</a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if seller_orders|length > 3 %}
+                            <div style="text-align: center; margin-top: 1.5rem;">
+                                <a href="{{ url_for('order_history') }}" class="btn-secondary">View All Sales</a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-tag"></i>
+                            <p>You haven't made any sales yet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- New Reviews Tab Content -->
+                <div id="reviews-content" style="display: none;">
+                    <div style="margin-bottom: 2rem;">
+                        <h4 style="margin-bottom: 1rem;">Reviews You've Received</h4>
+                        
+                        {% if user.reviews_received %}
+                            <div class="reviews-list">
+                                {% for review in user.reviews_received %}
+                                    <div class="review-item">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                            <div style="display: flex; align-items: center;">
+                                                <div class="avatar">{{ review.reviewer.username[0] }}</div>
+                                                <div style="margin-left: 1rem;">
+                                                    <p style="font-weight: bold;">{{ review.reviewer.username }}</p>
+                                                    <p style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">{{ review.created_at.strftime('%b %d, %Y') }}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div style="display: flex;">
+                                                    {% for i in range(5) %}
+                                                        {% if i < review.rating %}
+                                                            <i class="fas fa-star" style="color: gold; margin-right: 0.2rem;"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star" style="color: gold; margin-right: 0.2rem;"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p style="margin-top: 0.5rem;">{{ review.comment }}</p>
+                                        
+                                        {% if review.response %}
+                                            <div class="review-response">
+                                                <p style="font-weight: bold;">Your Response:</p>
+                                                <p>{{ review.response }}</p>
+                                            </div>
+                                        {% else %}
+                                            <button class="btn-secondary btn-sm reply-review-btn" data-review-id="{{ review.id }}" style="margin-top: 0.5rem;">
+                                                <i class="fas fa-reply" style="margin-right: 0.3rem;"></i> Reply
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state" style="padding: 2rem;">
+                                <i class="fas fa-star"></i>
+                                <p>You haven't received any reviews yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        <h4 style="margin-bottom: 1rem;">Reviews You've Given</h4>
+                        
+                        {% if user.reviews_given %}
+                            <div class="reviews-list">
+                                {% for review in user.reviews_given %}
+                                    <div class="review-item">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                            <div style="display: flex; align-items: center;">
+                                                <div class="avatar">{{ review.recipient.username[0] }}</div>
+                                                <div style="margin-left: 1rem;">
+                                                    <p style="font-weight: bold;">{{ review.recipient.username }}</p>
+                                                    <p style="font-size: 0.9rem; color: rgba(255, 255, 255, 0.7);">{{ review.created_at.strftime('%b %d, %Y') }}</p>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div style="display: flex;">
+                                                    {% for i in range(5) %}
+                                                        {% if i < review.rating %}
+                                                            <i class="fas fa-star" style="color: gold; margin-right: 0.2rem;"></i>
+                                                        {% else %}
+                                                            <i class="far fa-star" style="color: gold; margin-right: 0.2rem;"></i>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <p style="margin-top: 0.5rem;">{{ review.comment }}</p>
+                                        
+                                        {% if review.response %}
+                                            <div class="review-response">
+                                                <p style="font-weight: bold;">Their Response:</p>
+                                                <p>{{ review.response }}</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state" style="padding: 2rem;">
+                                <i class="fas fa-star"></i>
+                                <p>You haven't given any reviews yet.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reply to Review Modal -->
+<div id="reply-review-modal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Reply to Review</h3>
+            <button class="close-btn">&times;</button>
+        </div>
+        
+        <form id="reply-review-form" method="POST" action="#" onsubmit="submitReplyForm(event)">
+            <input type="hidden" id="review-id" name="review_id">
+            
+            <div class="form-group">
+                <label for="review-response" class="form-label">Your Response</label>
+                <textarea id="review-response" name="response" class="form-control" rows="4" required></textarea>
+            </div>
+            
+            <div style="text-align: center; margin-top: 1.5rem;">
+                <button type="submit" class="btn-primary">Submit Response</button>
+                <button type="button" class="btn-secondary cancel-btn" style="margin-left: 1rem;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Complete Profile Modal -->
+<div id="complete-profile-modal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 class="modal-title">Complete Your Profile</h3>
+            <button class="close-profile-btn">&times;</button>
+        </div>
+        
+        <form id="profile-completion-form" method="POST" action="{{ url_for('update_profile') }}">
+            <div class="form-group">
+                <label for="phone_number" class="form-label">Phone Number *</label>
+                <input type="tel" id="phone_number" name="phone_number" class="form-control" 
+                       value="{{ user.phone_number }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="dob" class="form-label">Date of Birth *</label>
+                <input type="date" id="dob" name="dob" class="form-control" 
+                       value="{{ user.dob.strftime('%Y-%m-%d') if user.dob else '' }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="location" class="form-label">Location *</label>
+                <select id="location" name="location" class="form-control form-select" required>
+                    <option value="" {% if not user.location %}selected{% endif %}>Select Your Country</option>
+                    <option value="India" {% if user.location == 'India' %}selected{% endif %}>India</option>
+                    <option value="USA" {% if user.location == 'USA' %}selected{% endif %}>USA</option>
+                    <option value="UK" {% if user.location == 'UK' %}selected{% endif %}>UK</option>
+                    <option value="Canada" {% if user.location == 'Canada' %}selected{% endif %}>Canada</option>
+                    <option value="Australia" {% if user.location == 'Australia' %}selected{% endif %}>Australia</option>
+                    <option value="Singapore" {% if user.location == 'Singapore' %}selected{% endif %}>Singapore</option>
+                    <option value="UAE" {% if user.location == 'UAE' %}selected{% endif %}>UAE</option>
+                    <option value="Other" {% if user.location == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            
+            <div style="text-align: center; margin-top: 1.5rem; padding: 0 1.5rem 1.5rem;">
+                <button type="submit" class="btn-primary">Save Information</button>
+                <button type="button" class="btn-secondary close-profile-btn" style="margin-left: 1rem;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Complete profile functionality
+        const completeProfileBtn = document.getElementById('complete-profile-btn');
+        const completeProfileModal = document.getElementById('complete-profile-modal');
+        const closeProfileBtns = document.querySelectorAll('.close-profile-btn');
+        
+        if (completeProfileBtn) {
+            completeProfileBtn.addEventListener('click', function() {
+                completeProfileModal.style.display = 'flex';
+            });
+        }
+        
+        closeProfileBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                completeProfileModal.style.display = 'none';
+            });
+        });
+        
+        // Tab switching functionality
+        const tabListings = document.getElementById('tab-listings');
+        const tabPurchases = document.getElementById('tab-purchases');
+        const tabSales = document.getElementById('tab-sales');
+        const tabReviews = document.getElementById('tab-reviews');
+        
+        const listingsContent = document.getElementById('listings-content');
+        const purchasesContent = document.getElementById('purchases-content');
+        const salesContent = document.getElementById('sales-content');
+        const reviewsContent = document.getElementById('reviews-content');
+        
+        function setActiveTab(activeTab) {
+            // Reset all tabs
+            [tabListings, tabPurchases, tabSales, tabReviews].forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Hide all content
+            [listingsContent, purchasesContent, salesContent, reviewsContent].forEach(content => {
+                if (content) content.style.display = 'none';
+            });
+            
+            // Set active tab and show content
+            activeTab.classList.add('active');
+            
+            if (activeTab === tabListings && listingsContent) {
+                listingsContent.style.display = 'block';
+            } else if (activeTab === tabPurchases && purchasesContent) {
+                purchasesContent.style.display = 'block';
+            } else if (activeTab === tabSales && salesContent) {
+                salesContent.style.display = 'block';
+            } else if (activeTab === tabReviews && reviewsContent) {
+                reviewsContent.style.display = 'block';
+            }
+        }
+        
+        if (tabListings) {
+            tabListings.addEventListener('click', function(e) {
+                e.preventDefault();
+                setActiveTab(tabListings);
+            });
+        }
+        
+        if (tabPurchases) {
+            tabPurchases.addEventListener('click', function(e) {
+                e.preventDefault();
+                setActiveTab(tabPurchases);
+            });
+        }
+        
+        if (tabSales) {
+            tabSales.addEventListener('click', function(e) {
+                e.preventDefault();
+                setActiveTab(tabSales);
+            });
+        }
+        
+        if (tabReviews) {
+            tabReviews.addEventListener('click', function(e) {
+                e.preventDefault();
+                setActiveTab(tabReviews);
+            });
+        }
+        
+        // Reply to review functionality
+        const replyReviewModal = document.getElementById('reply-review-modal');
+        const replyReviewForm = document.getElementById('reply-review-form');
+        const reviewIdInput = document.getElementById('review-id');
+        const closeModalBtn = document.querySelector('#reply-review-modal .close-btn');
+        const cancelBtn = document.querySelector('#reply-review-modal .cancel-btn');
+        
+        // Open modal on reply button click
+        document.querySelectorAll('.reply-review-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const reviewId = this.getAttribute('data-review-id');
+                reviewIdInput.value = reviewId;
+                replyReviewModal.style.display = 'flex';
+            });
+        });
+        
+        // Add form submission function
+        function submitReplyForm(event) {
+            event.preventDefault();
+            const reviewId = document.getElementById('review-id').value;
+            const response = document.getElementById('review-response').value;
+            
+            if (!reviewId || !response) {
+                alert('Please provide a response');
+                return;
+            }
+            
+            // Set the form action dynamically with the review ID
+            const form = document.getElementById('reply-review-form');
+            form.action = "/reply_to_review/" + reviewId;
+            form.submit();
+        }
+        
+        // Close modal functions
+        function closeModal() {
+            replyReviewModal.style.display = 'none';
+            replyReviewForm.reset();
+        }
+        
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', closeModal);
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeModal);
+        }
+        
+        // Profile edit button functionality
+        document.getElementById('edit-profile-btn').addEventListener('click', function() {
+            // Show the complete profile modal for editing profile
+            if (completeProfileModal) {
+                completeProfileModal.style.display = 'flex';
+            } else {
+                alert('Edit profile functionality will be implemented in the next update.');
+            }
+        });
+        
+        // Change password button functionality
+        document.getElementById('change-password-btn').addEventListener('click', function() {
+            alert('Change password functionality will be available in the next update.');
+        });
+    });
+</script>
+
+<style>
+    .progress-bar {
+        flex: 1;
+        height: 8px;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    
+    .progress {
+        height: 100%;
+        background-color: var(--primary-color);
+    }
+    
+    .avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    
+    .reviews-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .review-item {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    
+    .review-response {
+        margin-top: 1rem;
+        padding: 0.8rem;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        border-left: 3px solid var(--primary-color);
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    /* Profile warning styles */
+    .profile-warning {
+        background-color: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+    
+    .warning-icon {
+        font-size: 2rem;
+        color: #FFC107;
+        flex-shrink: 0;
+    }
+    
+    .warning-content {
+        flex: 1;
+    }
+    
+    .warning-content h3 {
+        color: #FFC107;
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+    }
+    
+    .warning-content ul {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+    }
+    
+    #complete-profile-modal.modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+
+<!-- Additional CSS for profile alignment -->
+<style>
+    /* Main container styles */
+    .profile-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    /* Dashboard card styling */
+    .dashboard-card {
+        background-color: rgba(20, 25, 45, 0.7);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* Section title alignment */
+    .section-title {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 1.3rem;
+        color: white;
+        font-weight: 500;
+    }
+    
+    /* Nested card alignment */
+    .nested-card {
+        background-color: rgba(30, 35, 60, 0.5);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Grid layout for cards */
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    /* Post item card layout */
+    .post-item {
+        background-color: rgba(40, 45, 75, 0.5);
+        border-radius: 8px;
+        padding: 1.5rem;
+        transition: transform 0.2s;
+    }
+    
+    .post-item:hover {
+        transform: translateY(-5px);
+    }
+    
+    /* Tab navigation styling */
+    .tab-navigation {
+        display: flex;
+        margin-bottom: 1.5rem;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .tab-button {
+        flex: 1;
+        text-align: center;
+        padding: 0.8rem 1rem;
+        border-radius: 8px;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        text-decoration: none;
+        transition: background-color 0.2s;
+    }
+    
+    .tab-button.active {
+        background-color: var(--status-blue);
+    }
+    
+    /* Responsive layout */
+    @media (max-width: 768px) {
+        .grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .profile-header > div {
+            flex-direction: column;
+        }
+    }
+
+    /* Profile info layout */
+    .profile-info-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .profile-info-section {
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .info-row {
+        display: flex;
+        margin-bottom: 0.75rem;
+        align-items: baseline;
+    }
+
+    .info-label {
+        color: white;
+        font-weight: 500;
+        min-width: 100px;
+        flex-shrink: 0;
+    }
+
+    .info-value {
+        color: rgba(255, 255, 255, 0.8);
+        flex: 1;
+    }
+
+    /* Complete profile modal */
+    #complete-profile-modal {
+        z-index: 2000;
+    }
+
+    #complete-profile-modal .modal-content {
+        max-width: 500px;
+        background-color: rgba(25, 30, 50, 0.95);
+        border-radius: 12px;
+    }
+
+    /* General modal styles */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        justify-content: center;
+        align-items: center;
+        overflow-y: auto;
+    }
+
+    .modal-content {
+        background-color: #121930;
+        border-radius: 12px;
+        max-width: 800px;
+        width: 90%;
+        margin: 30px auto;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding:. 1.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-title {
+        margin: 0;
+        color: white;
+    }
+
+    .close-btn, .close-profile-btn, .cancel-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .close-btn, .close-profile-btn {
+        font-size: 1.5rem;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .close-btn:hover, .close-profile-btn:hover {
+        color: white;
+    }
+
+    .form-group {
+        margin-bottom: 1.5rem;
+        padding: 0 1.5rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: white;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem;
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        color: white;
+        font-size: 1rem;
+        transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        background-color: #4a7aff;
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %} 

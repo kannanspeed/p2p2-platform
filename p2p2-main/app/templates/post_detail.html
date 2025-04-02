@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="dashboard-card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+        <h2 class="dashboard-title" style="margin-bottom: 0;">{{ post.title }}</h2>
+        {% if post.post_type == 'service' %}
+            <span class="tag-service">Service</span>
+        {% else %}
+            <span class="tag-product">Product</span>
+        {% endif %}
+    </div>
+    
+    <div style="margin-bottom: 2rem;">
+        <p style="color: white;"><strong>Description:</strong></p>
+        <p style="margin-top: 0.5rem; color: rgba(255, 255, 255, 0.8);">{{ post.description or 'No description provided.' }}</p>
+    </div>
+    
+    <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem;">
+        <div style="flex: 1; min-width: 250px;">
+            <h3 class="section-title">Payment Method</h3>
+            <p style="color: rgba(255, 255, 255, 0.8);">
+                {% if post.payment_method == 'other' %}
+                    {{ post.custom_payment }}
+                {% else %}
+                    {{ post.payment_method.capitalize() }}
+                {% endif %}
+            </p>
+        </div>
+        
+        <div style="flex: 1; min-width: 250px;">
+            <h3 class="section-title">Posted By</h3>
+            <p style="color: rgba(255, 255, 255, 0.8);">{{ post.seller.username }}</p>
+            <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.9rem;">{{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+        </div>
+    </div>
+    
+    {% if 'user_id' in session and session['user_id'] != post.seller_id %}
+        <div class="nested-card">
+            <h3 class="nested-card-title">Place an Order</h3>
+            
+            <form method="POST" action="{{ url_for('create_order', post_id=post.id) }}">
+                <div class="form-group">
+                    <label for="timeline" class="form-label">Select Timeline</label>
+                    <select id="timeline" name="timeline" class="form-control" required>
+                        {% for option in post.timeline_options.split(',') %}
+                            <option value="{{ option.strip() }}">{{ option.strip() }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <button type="submit" class="btn-create-post">Place Order</button>
+                </div>
+            </form>
+        </div>
+    {% elif 'user_id' in session and session['user_id'] == post.seller_id %}
+        <div class="nested-card" style="background-color: rgba(30, 30, 50, 0.7);">
+            <p style="text-align: center; color: rgba(255, 255, 255, 0.8);">This is your own post. You cannot place an order on your own listing.</p>
+        </div>
+    {% else %}
+        <div class="nested-card" style="background-color: rgba(30, 30, 50, 0.7);">
+            <p style="text-align: center; color: rgba(255, 255, 255, 0.8);">Please <a href="{{ url_for('login') }}" style="color: var(--status-blue);">log in</a> to place an order.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 
