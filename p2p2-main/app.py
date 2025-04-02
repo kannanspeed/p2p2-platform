@@ -397,7 +397,7 @@ def seller_dashboard():
     
     try:
         # Try to query posts with boost and draft flags
-    posts = Post.query.filter_by(seller_id=user.id).order_by(Post.created_at.desc()).all()
+        posts = Post.query.filter_by(seller_id=user.id).order_by(Post.created_at.desc()).all()
     except Exception as e:
         # If columns don't exist yet, use a simpler query
         print(f"Error querying posts: {e}")
@@ -511,12 +511,22 @@ def create_order(post_id):
     buyer = User.query.get(session['user_id'])
     buyer_wallet = Wallet.query.filter_by(user_id=buyer.id).first()
     
-    # For demonstration, assume each order costs 10 USDT
-    # In a real application, you would use the actual order amount
-    required_funds = 10.0
+    # Parse the actual quantity from the post description
+    # Example format: "USDT Quantity: 1.3, Price per USDT: 96"
+    required_funds = 0
+    if "USDT Quantity:" in post.description:
+        try:
+            quantity_text = post.description.split("USDT Quantity:")[1].split(",")[0].strip()
+            required_funds = float(quantity_text)
+        except (IndexError, ValueError):
+            # Fallback to the minimum value
+            required_funds = 1.0
+    else:
+        # Default value if parsing fails
+        required_funds = 1.0
     
     if not buyer_wallet or float(buyer_wallet.balance) < required_funds:
-        flash('Insufficient funds in your wallet. Please add funds before placing an order.', 'error')
+        flash(f'Insufficient funds in your wallet. You need at least {required_funds} USDT before placing an order.', 'error')
         return redirect(url_for('post_detail', post_id=post_id))
     
     new_order = Order(
@@ -570,7 +580,7 @@ def update_order_status(order_id):
     
     # Get status either from form data (POST) or query parameters (GET)
     if request.method == 'POST':
-    status = request.form.get('status')
+        status = request.form.get('status')
     else:
         status = request.args.get('status')
     
@@ -671,9 +681,19 @@ def complete_order(order):
     
     if buyer_wallet and seller_wallet:
         try:
-            # For demonstration, assume each order costs 10 USDT
-            # In a real application, you would use the actual order amount
-            amount = 10.0
+            # Parse the actual amount from the post description
+            # Example format: "USDT Quantity: 1.3, Price per USDT: 96"
+            amount = 0
+            if "USDT Quantity:" in order.post.description:
+                try:
+                    quantity_text = order.post.description.split("USDT Quantity:")[1].split(",")[0].strip()
+                    amount = float(quantity_text)
+                except (IndexError, ValueError):
+                    # Fallback to the minimum value
+                    amount = 1.0
+            else:
+                # Default value if parsing fails
+                amount = 1.0
             
             # Check if buyer has enough funds
             if float(buyer_wallet.balance) >= amount:
