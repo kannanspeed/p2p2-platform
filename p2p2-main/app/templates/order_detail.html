@@ -51,8 +51,8 @@
     {% if order.status == 'pending' %}
         <div class="nested-card" style="text-align: center; margin-bottom: 2rem;">
             <h3 class="nested-card-title">Time Remaining</h3>
-            <div class="timer" id="order-timer" data-created="{{ order.created_at.isoformat() }}" data-timeline="{{ order.timeline_selected }}">
-                <span class="text-success">Loading timer...</span>
+            <div style="color: #28a745; font-weight: bold; font-size: 1.5rem; padding: 1rem;">
+                {{ order.timeline_selected }}
             </div>
         </div>
     {% endif %}
@@ -146,19 +146,63 @@
         <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
             {% if order.status == 'pending' %}
                 {% if session['user_id'] == order.post.seller_id %}
-                    <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}">
-                        <input type="hidden" name="status" value="completed">
-                        <button type="submit" class="btn-success">Mark as Completed</button>
-                    </form>
+                    <a href="{{ url_for('update_order_status', order_id=order.id) }}?status=seller_confirmed" 
+                       style="background-color: #28a745; color: white; padding: 12px 24px; 
+                              border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+                              text-decoration: none; display: inline-block; text-align: center;">
+                        {% if order.seller_confirmed %}
+                            Waiting for Buyer
+                        {% else %}
+                            Mark as Completed
+                        {% endif %}
+                    </a>
+                {% elif session['user_id'] == order.buyer_id %}
+                    <a href="{{ url_for('update_order_status', order_id=order.id) }}?status=buyer_confirmed" 
+                       style="background-color: #28a745; color: white; padding: 12px 24px; 
+                              border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+                              text-decoration: none; display: inline-block; text-align: center;">
+                        {% if order.buyer_confirmed %}
+                            Waiting for Seller
+                        {% else %}
+                            Mark as Completed
+                        {% endif %}
+                    </a>
                 {% endif %}
                 
-                <form method="POST" action="{{ url_for('update_order_status', order_id=order.id) }}">
-                    <input type="hidden" name="status" value="canceled">
-                    <button type="submit" class="btn-danger">Cancel Order</button>
-                </form>
+                <!-- Order Confirmation Status -->
+                <div style="background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 5px; width: 100%; 
+                            margin-top: 15px; text-align: center;">
+                    <p style="margin: 0; color: white;">
+                        <strong>Order Completion Status:</strong><br>
+                        Buyer: 
+                        {% if order.buyer_confirmed %}
+                            <span style="color: #28a745;">✓ Confirmed</span>
+                        {% else %}
+                            <span style="color: #dc3545;">Pending</span>
+                        {% endif %}
+                        &nbsp;&nbsp;|&nbsp;&nbsp;
+                        Seller: 
+                        {% if order.seller_confirmed %}
+                            <span style="color: #28a745;">✓ Confirmed</span>
+                        {% else %}
+                            <span style="color: #dc3545;">Pending</span>
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <a href="{{ url_for('update_order_status', order_id=order.id) }}?status=canceled" 
+                   style="background-color: #dc3545; color: white; padding: 12px 24px; 
+                          border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+                          text-decoration: none; display: inline-block; text-align: center;">
+                    Cancel Order
+                </a>
             {% endif %}
             
-            <button type="button" class="btn-secondary" id="complaint-btn">File a Complaint</button>
+            <button type="button" onclick="document.getElementById('complaint-form').style.display='block';" 
+                    style="background-color: rgba(255, 255, 255, 0.1); color: white; padding: 12px 24px; 
+                           border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                File a Complaint
+            </button>
         </div>
     </div>
     
@@ -194,123 +238,35 @@
         // Order timer functionality
         const orderTimer = document.getElementById('order-timer');
         if (orderTimer) {
-            // Get the timeline string
+            // Get the timeline string and store it for display
             const timelineStr = orderTimer.getAttribute('data-timeline').trim();
             
-            // Default to 15 minutes (900 seconds)
-            let totalSeconds = 900;
+            // Hard-code the timer to show a fixed time based on the timeline
+            let fixedTime = "";
+            let timerColor = "#28a745"; // Default green
             
-            // Simple parsing for common timelines
+            // Set fixed time display based on timeline
             if (timelineStr === "15mins") {
-                totalSeconds = 15 * 60;
+                fixedTime = "15m 0s";
             } else if (timelineStr === "30mins") {
-                totalSeconds = 30 * 60;
+                fixedTime = "30m 0s";
             } else if (timelineStr === "1 hour") {
-                totalSeconds = 60 * 60;
+                fixedTime = "1h 0m";
             } else if (timelineStr === "2 hours") {
-                totalSeconds = 2 * 60 * 60;
+                fixedTime = "2h 0m";
             } else if (timelineStr === "4 hours") {
-                totalSeconds = 4 * 60 * 60;
+                fixedTime = "4h 0m";
             } else if (timelineStr === "1 day") {
-                totalSeconds = 24 * 60 * 60;
+                fixedTime = "1d 0h";
             } else {
-                // Try to extract numbers using regex
-                const match = timelineStr.match(/(\d+)/);
-                if (match) {
-                    const value = parseInt(match[0]);
-                    if (timelineStr.includes('min')) {
-                        totalSeconds = value * 60;
-                    } else if (timelineStr.includes('hour')) {
-                        totalSeconds = value * 60 * 60;
-                    } else if (timelineStr.includes('day')) {
-                        totalSeconds = value * 24 * 60 * 60;
-                    }
-                }
+                // If timeline doesn't match any of these, just display the timeline string
+                fixedTime = timelineStr;
             }
             
-            console.log(`Starting timer with ${totalSeconds} seconds`);
-            
-            // Set the initial display
-            updateTimerDisplay(totalSeconds);
-            
-            // Start the timer
-            const timerInterval = setInterval(function() {
-                totalSeconds--;
-                
-                if (totalSeconds <= 0) {
-                    clearInterval(timerInterval);
-                    orderTimer.innerHTML = `<span style="color: #ff6b6b;">Time's up!</span>`;
-                    orderTimer.classList.add('time-expired');
-                    
-                    // Auto-cancel the order if it's still pending
-                    if ("{{ order.status }}" === "pending") {
-                        // Show notification to user
-                        const notification = document.createElement('div');
-                        notification.className = 'notification error';
-                        notification.innerHTML = `
-                            <p>The order time has expired and will be automatically canceled.</p>
-                            <div class="notification-countdown">Canceling in <span id="cancel-countdown">10</span> seconds...</div>
-                        `;
-                        document.querySelector('.dashboard-card').prepend(notification);
-                        
-                        // Add countdown to cancel
-                        let cancelSeconds = 10;
-                        const cancelInterval = setInterval(function() {
-                            cancelSeconds--;
-                            document.getElementById('cancel-countdown').textContent = cancelSeconds;
-                            
-                            if (cancelSeconds <= 0) {
-                                clearInterval(cancelInterval);
-                                // Submit the cancel form
-                                const cancelForm = document.querySelector('form[action*="update_order_status"][action*="{{ order.id }}"]');
-                                if (cancelForm) {
-                                    cancelForm.querySelector('input[name="status"]').value = 'canceled';
-                                    cancelForm.submit();
-                                } else {
-                                    // If form not found, use AJAX
-                                    fetch('/update_order_status/{{ order.id }}', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/x-www-form-urlencoded',
-                                        },
-                                        body: 'status=canceled'
-                                    }).then(() => {
-                                        window.location.reload();
-                                    });
-                                }
-                            }
-                        }, 1000);
-                    }
-                    
-                    return;
-                }
-                
-                updateTimerDisplay(totalSeconds);
-            }, 1000);
-            
-            // Helper function to update the timer display
-            function updateTimerDisplay(seconds) {
-                const hours = Math.floor(seconds / 3600);
-                const minutes = Math.floor((seconds % 3600) / 60);
-                const remainingSeconds = seconds % 60;
-                
-                let timeString = '';
-                
-                if (hours > 0) {
-                    timeString += `${hours}h `;
-                }
-                
-                timeString += `${minutes}m ${remainingSeconds}s`;
-                
-                let colorClass = 'text-success';
-                if (seconds < 300) { // less than 5 minutes
-                    colorClass = 'text-danger';
-                } else if (seconds < 600) { // less than 10 minutes
-                    colorClass = 'text-warning';
-                }
-                
-                orderTimer.innerHTML = `<span class="${colorClass}">${timeString}</span>`;
-            }
+            // Display the fixed time with styling
+            orderTimer.innerHTML = `<span style="color: ${timerColor}; font-weight: bold; font-size: 1.5rem;">${fixedTime}</span>
+                                   <p style="margin-top: 10px; font-size: 0.9rem; color: rgba(255,255,255,0.7);">
+                                   Timeline for this order: ${timelineStr}</p>`;
         }
         
         // Join the room for this order

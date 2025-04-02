@@ -56,6 +56,8 @@ class Order(db.Model):
     timeline_selected = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(20), default='pending')  # pending, completed, canceled, disputed
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    buyer_confirmed = db.Column(db.Boolean, default=False)
+    seller_confirmed = db.Column(db.Boolean, default=False)
     messages = db.relationship('Message', backref='order', lazy=True)
 
 class Message(db.Model):
@@ -395,7 +397,7 @@ def seller_dashboard():
     
     try:
         # Try to query posts with boost and draft flags
-        posts = Post.query.filter_by(seller_id=user.id).order_by(Post.created_at.desc()).all()
+    posts = Post.query.filter_by(seller_id=user.id).order_by(Post.created_at.desc()).all()
     except Exception as e:
         # If columns don't exist yet, use a simpler query
         print(f"Error querying posts: {e}")
@@ -505,18 +507,31 @@ def create_order(post_id):
     post = Post.query.get_or_404(post_id)
     timeline = request.form.get('timeline')
     
+    # Check if the buyer has enough funds
+    buyer = User.query.get(session['user_id'])
+    buyer_wallet = Wallet.query.filter_by(user_id=buyer.id).first()
+    
+    # For demonstration, assume each order costs 10 USDT
+    # In a real application, you would use the actual order amount
+    required_funds = 10.0
+    
+    if not buyer_wallet or float(buyer_wallet.balance) < required_funds:
+        flash('Insufficient funds in your wallet. Please add funds before placing an order.', 'error')
+        return redirect(url_for('post_detail', post_id=post_id))
+    
     new_order = Order(
         buyer_id=session['user_id'],
         post_id=post_id,
         timeline_selected=timeline,
-        status='pending'
+        status='pending',
+        buyer_confirmed=False,
+        seller_confirmed=False
     )
     
     db.session.add(new_order)
     db.session.commit()
     
     # Create notification for the seller
-    buyer = User.query.get(session['user_id'])
     seller_notification = Notification(
         user_id=post.seller_id,
         order_id=new_order.id,
@@ -546,13 +561,18 @@ def order_detail(order_id):
     
     return render_template('order_detail.html', order=order, messages=messages)
 
-@app.route('/update_order_status/<int:order_id>', methods=['POST'])
+@app.route('/update_order_status/<int:order_id>', methods=['GET', 'POST'])
 def update_order_status(order_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
     order = Order.query.get_or_404(order_id)
+    
+    # Get status either from form data (POST) or query parameters (GET)
+    if request.method == 'POST':
     status = request.form.get('status')
+    else:
+        status = request.args.get('status')
     
     # Verify user has permission to update status
     user_id = session['user_id']
@@ -560,8 +580,57 @@ def update_order_status(order_id):
         flash('You do not have permission to update this order')
         return redirect(url_for('order_detail', order_id=order_id))
     
-    # Only allow specific status transitions
-    if status in ['completed', 'canceled', 'disputed']:
+    # Handle the different status values
+    if status == 'buyer_confirmed':
+        if user_id != order.buyer_id:
+            flash('Only the buyer can confirm completion')
+            return redirect(url_for('order_detail', order_id=order_id))
+            
+        order.buyer_confirmed = True
+        db.session.commit()
+        
+        # Notify seller that buyer has confirmed
+        notification = Notification(
+            user_id=order.post.seller_id,
+            order_id=order_id,
+            content=f"Buyer has confirmed completion of order for '{order.post.title}'"
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        # Check if both parties have confirmed
+        if order.seller_confirmed:
+            # Complete the order
+            return complete_order(order)
+        else:
+            flash('You have confirmed completion. Waiting for the seller to confirm.')
+            
+    elif status == 'seller_confirmed':
+        if user_id != order.post.seller_id:
+            flash('Only the seller can confirm completion')
+            return redirect(url_for('order_detail', order_id=order_id))
+            
+        order.seller_confirmed = True
+        db.session.commit()
+        
+        # Notify buyer that seller has confirmed
+        notification = Notification(
+            user_id=order.buyer_id,
+            order_id=order_id,
+            content=f"Seller has confirmed completion of order for '{order.post.title}'"
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        # Check if both parties have confirmed
+        if order.buyer_confirmed:
+            # Complete the order
+            return complete_order(order)
+        else:
+            flash('You have confirmed completion. Waiting for the buyer to confirm.')
+    
+    # Handle traditional status values
+    elif status in ['completed', 'canceled', 'disputed']:
         order.status = status
         db.session.commit()
         
@@ -591,6 +660,89 @@ def update_order_status(order_id):
         flash(f'Order has been marked as {status}')
     
     return redirect(url_for('order_detail', order_id=order_id))
+
+def complete_order(order):
+    """Complete the order and transfer funds from buyer to seller"""
+    order.status = 'completed'
+    
+    # Get buyer and seller wallets
+    buyer_wallet = Wallet.query.filter_by(user_id=order.buyer_id).first()
+    seller_wallet = Wallet.query.filter_by(user_id=order.post.seller_id).first()
+    
+    if buyer_wallet and seller_wallet:
+        try:
+            # For demonstration, assume each order costs 10 USDT
+            # In a real application, you would use the actual order amount
+            amount = 10.0
+            
+            # Check if buyer has enough funds
+            if float(buyer_wallet.balance) >= amount:
+                # Deduct from buyer's wallet
+                buyer_wallet.balance = str(float(buyer_wallet.balance) - amount)
+                
+                # Add to seller's wallet
+                seller_wallet.balance = str(float(seller_wallet.balance) + amount)
+                
+                # Create transaction record
+                transaction = Transaction(
+                    wallet_id=buyer_wallet.id,
+                    tx_hash=f"order-{order.id}-{datetime.utcnow().timestamp()}",
+                    amount=str(amount),
+                    tx_type="send",
+                    status="completed",
+                    to_address=seller_wallet.address
+                )
+                db.session.add(transaction)
+                
+                # Create corresponding transaction for seller
+                seller_transaction = Transaction(
+                    wallet_id=seller_wallet.id,
+                    tx_hash=f"order-{order.id}-{datetime.utcnow().timestamp()}",
+                    amount=str(amount),
+                    tx_type="receive",
+                    status="completed",
+                    from_address=buyer_wallet.address
+                )
+                db.session.add(seller_transaction)
+                db.session.commit()
+                
+                # Create notifications for both parties
+                buyer_notification = Notification(
+                    user_id=order.buyer_id,
+                    order_id=order.id,
+                    content=f"Order completed! {amount} USDT has been transferred to the seller."
+                )
+                db.session.add(buyer_notification)
+                
+                seller_notification = Notification(
+                    user_id=order.post.seller_id,
+                    order_id=order.id,
+                    content=f"Order completed! You received {amount} USDT from the buyer."
+                )
+                db.session.add(seller_notification)
+                db.session.commit()
+                
+                flash('Order completed successfully! Funds have been transferred.')
+            else:
+                flash('Insufficient funds in buyer wallet to complete the order.', 'error')
+                # Reset confirmation status
+                order.buyer_confirmed = False
+                order.seller_confirmed = False
+                db.session.commit()
+        except Exception as e:
+            flash(f'Error processing payment: {str(e)}', 'error')
+            # Reset confirmation status
+            order.buyer_confirmed = False
+            order.seller_confirmed = False
+            db.session.commit()
+    else:
+        flash('Could not process payment: missing wallet information', 'error')
+        # Reset confirmation status
+        order.buyer_confirmed = False
+        order.seller_confirmed = False
+        db.session.commit()
+    
+    return redirect(url_for('order_detail', order_id=order.id))
 
 @app.route('/send_message/<int:order_id>', methods=['POST'])
 def send_message(order_id):
@@ -862,7 +1014,7 @@ def parse_duration(duration_str):
             return timedelta(hours=value)  # Default to hours
     except Exception:
         # If any error occurs during parsing, return a default value
-        return timedelta(hours=24)  # Default to 24 hours
+            return timedelta(hours=24)  # Default to 24 hours
 
 @app.route('/create_review/<int:user_id>', methods=['POST'])
 def create_review(user_id):
