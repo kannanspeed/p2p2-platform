@@ -4,15 +4,17 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from flask_socketio import SocketIO, emit, join_room
 import os
-from wallet_service import WalletService
-from wallet_monitor import start_monitoring, stop_monitoring
+from wallet_service import WalletService, start_monitoring, stop_monitoring, complete_order_blockchain
+from flask_migrate import Migrate
 
 app = Flask(__name__, template_folder='app/templates', static_folder='app/static')
 app.config['SECRET_KEY'] = 'peer-app-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///peer.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['USE_REAL_BLOCKCHAIN'] = os.environ.get('USE_REAL_BLOCKCHAIN', 'False')
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 socketio = SocketIO(app)
 
 # Initialize wallet service
@@ -681,75 +683,105 @@ def complete_order(order):
     
     if buyer_wallet and seller_wallet:
         try:
-            # Parse the actual amount from the post description
-            # Example format: "USDT Quantity: 1.3, Price per USDT: 96"
-            amount = 0
-            if "USDT Quantity:" in order.post.description:
-                try:
-                    quantity_text = order.post.description.split("USDT Quantity:")[1].split(",")[0].strip()
-                    amount = float(quantity_text)
-                except (IndexError, ValueError):
-                    # Fallback to the minimum value
-                    amount = 1.0
-            else:
-                # Default value if parsing fails
-                amount = 1.0
-            
-            # Check if buyer has enough funds
-            if float(buyer_wallet.balance) >= amount:
-                # Deduct from buyer's wallet
-                buyer_wallet.balance = str(float(buyer_wallet.balance) - amount)
-                
-                # Add to seller's wallet
-                seller_wallet.balance = str(float(seller_wallet.balance) + amount)
-                
-                # Create transaction record
-                transaction = Transaction(
-                    wallet_id=buyer_wallet.id,
-                    tx_hash=f"order-{order.id}-{datetime.utcnow().timestamp()}",
-                    amount=str(amount),
-                    tx_type="send",
-                    status="completed",
-                    to_address=seller_wallet.address
-                )
-                db.session.add(transaction)
-                
-                # Create corresponding transaction for seller
-                seller_transaction = Transaction(
-                    wallet_id=seller_wallet.id,
-                    tx_hash=f"order-{order.id}-{datetime.utcnow().timestamp()}",
-                    amount=str(amount),
-                    tx_type="receive",
-                    status="completed",
-                    from_address=buyer_wallet.address
-                )
-                db.session.add(seller_transaction)
-                db.session.commit()
+            # Use blockchain transfers in production mode, simulate in demo mode
+            if app.config['USE_REAL_BLOCKCHAIN'] == 'True':
+                # Use the blockchain service for real transfers
+                result = complete_order_blockchain(order, buyer_wallet, seller_wallet)
                 
                 # Create notifications for both parties
                 buyer_notification = Notification(
                     user_id=order.buyer_id,
                     order_id=order.id,
-                    content=f"Order completed! {amount} USDT has been transferred to the seller."
+                    content=f"Order completed! Transaction hash: {result['tx_hash']}"
                 )
                 db.session.add(buyer_notification)
                 
                 seller_notification = Notification(
                     user_id=order.post.seller_id,
                     order_id=order.id,
-                    content=f"Order completed! You received {amount} USDT from the buyer."
+                    content=f"Order completed! You received payment. Transaction hash: {result['tx_hash']}"
                 )
                 db.session.add(seller_notification)
                 db.session.commit()
                 
-                flash('Order completed successfully! Funds have been transferred.')
+                flash('Order completed successfully! The blockchain transaction has been submitted.')
             else:
-                flash('Insufficient funds in buyer wallet to complete the order.', 'error')
-                # Reset confirmation status
-                order.buyer_confirmed = False
-                order.seller_confirmed = False
-                db.session.commit()
+                # Parse the actual amount from the post description
+                amount = 0
+                if "USDT Quantity:" in order.post.description:
+                    try:
+                        quantity_text = order.post.description.split("USDT Quantity:")[1].split(",")[0].strip()
+                        amount = float(quantity_text)
+                    except (IndexError, ValueError):
+                        # Fallback to the minimum value
+                        amount = 1.0
+                else:
+                    # Default value if parsing fails
+                    amount = 1.0
+                
+                # Check if buyer has enough funds
+                if float(buyer_wallet.balance) >= amount:
+                    # Deduct from buyer's wallet
+                    buyer_wallet.balance = str(float(buyer_wallet.balance) - amount)
+                    
+                    # Add to seller's wallet
+                    seller_wallet.balance = str(float(seller_wallet.balance) + amount)
+                    
+                    # Generate unique timestamps for each transaction
+                    timestamp = datetime.utcnow().timestamp()
+                    buyer_timestamp = timestamp
+                    seller_timestamp = timestamp + 0.1  # Add 0.1 seconds to ensure uniqueness
+                    
+                    # Create transaction record for buyer (outgoing)
+                    transaction = Transaction(
+                        wallet_id=buyer_wallet.id,
+                        tx_hash=f"order-{order.id}-send-{buyer_timestamp}",
+                        amount=str(amount),
+                        tx_type="send",
+                        status="completed",
+                        to_address=seller_wallet.address
+                    )
+                    db.session.add(transaction)
+                    
+                    # Create corresponding transaction for seller (incoming)
+                    seller_transaction = Transaction(
+                        wallet_id=seller_wallet.id,
+                        tx_hash=f"order-{order.id}-receive-{seller_timestamp}",
+                        amount=str(amount),
+                        tx_type="receive",
+                        status="completed",
+                        from_address=buyer_wallet.address
+                    )
+                    db.session.add(seller_transaction)
+                    db.session.commit()
+                    
+                    # Create notifications for both parties
+                    buyer_notification = Notification(
+                        user_id=order.buyer_id,
+                        order_id=order.id,
+                        content=f"Order completed! {amount} USDT has been transferred to the seller."
+                    )
+                    db.session.add(buyer_notification)
+                    
+                    seller_notification = Notification(
+                        user_id=order.post.seller_id,
+                        order_id=order.id,
+                        content=f"Order completed! You received {amount} USDT from the buyer."
+                    )
+                    db.session.add(seller_notification)
+                    db.session.commit()
+                    
+                    flash('Order completed successfully! Funds have been transferred.')
+                else:
+                    flash('Insufficient funds in buyer wallet to complete the order.', 'error')
+                    # Reset confirmation status
+                    order.buyer_confirmed = False
+                    order.seller_confirmed = False
+                    db.session.commit()
+            
         except Exception as e:
+            # Roll back session in case of error
+            db.session.rollback()
             flash(f'Error processing payment: {str(e)}', 'error')
             # Reset confirmation status
             order.buyer_confirmed = False
@@ -1330,6 +1362,25 @@ if __name__ == '__main__':
                     print("Added profile completion fields to User table")
             except Exception as e:
                 print(f"Error adding profile completion fields to User table: {e}")
+                db.session.rollback()
+                
+        # Update Order table
+        if 'order' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('order')]
+            try:
+                missing_columns = []
+                if 'buyer_confirmed' not in columns:
+                    missing_columns.append('ALTER TABLE "order" ADD COLUMN buyer_confirmed BOOLEAN DEFAULT 0')
+                if 'seller_confirmed' not in columns:
+                    missing_columns.append('ALTER TABLE "order" ADD COLUMN seller_confirmed BOOLEAN DEFAULT 0')
+                
+                if missing_columns:
+                    for sql in missing_columns:
+                        db.session.execute(text(sql))
+                    db.session.commit()
+                    print("Added order confirmation fields to Order table")
+            except Exception as e:
+                print(f"Error adding order confirmation fields to Order table: {e}")
                 db.session.rollback()
     
     # Start wallet monitoring service

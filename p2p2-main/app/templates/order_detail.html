@@ -1,224 +1,259 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="dashboard-card">
-    <h2 class="dashboard-title">Order Details</h2>
-    
-    <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem;">
-        <div style="flex: 1; min-width: 300px;">
-            <h3 class="section-title">Product/Service</h3>
-            <p style="color: rgba(255, 255, 255, 0.9);"><strong style="color: white;">{{ order.post.title }}</strong> ({{ order.post.post_type.capitalize() }})</p>
-            <p style="color: rgba(255, 255, 255, 0.8);">{{ order.post.description or 'No description provided.' }}</p>
-        </div>
-        
-        <div style="flex: 1; min-width: 300px;">
-            <h3 class="section-title">Order Information</h3>
-            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
-                <strong style="color: white;">Status:</strong> 
-                <span class="status-tag" style="background-color: 
-                    {% if order.status == 'completed' %}var(--success-color)
-                    {% elif order.status == 'canceled' %}var(--danger-color)
-                    {% elif order.status == 'disputed' %}#f59f00
-                    {% else %}var(--secondary-color){% endif %}">
-                    {{ order.status.capitalize() }}
-                </span>
-            </p>
-            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Timeline:</strong> {{ order.timeline_selected }}</p>
-            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Payment Method:</strong> 
-                {% if order.post.payment_method == 'other' %}
-                    {{ order.post.custom_payment }}
-                {% else %}
-                    {{ order.post.payment_method.capitalize() }}
-                {% endif %}
-            </p>
-            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Order Date:</strong> {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
-        </div>
+<div class="order-details-container">
+    {% if config.USE_REAL_BLOCKCHAIN == 'True' %}
+    <!-- Production Mode Notice -->
+    <div style="background-color: rgba(40, 167, 69, 0.2); border-left: 4px solid #28a745; 
+                padding: 15px; margin: 20px 0; border-radius: 5px; text-align: left;">
+        <h4 style="margin-top: 0; color: #28a745;">🔒 Production Mode - Real Blockchain Transactions</h4>
+        <p style="margin-bottom: 0;">
+            This application is running in <strong>production mode</strong>. Order completion and fund transfers
+            interact with the actual blockchain. When both parties confirm an order, real funds are transferred
+            on the BNB Smart Chain network.
+        </p>
     </div>
-    
-    <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem;">
-        <div style="flex: 1; min-width: 300px;">
-            <h3 class="section-title">Buyer</h3>
-            <p style="color: rgba(255, 255, 255, 0.8);">{{ order.buyer.username }}</p>
-        </div>
-        
-        <div style="flex: 1; min-width: 300px;">
-            <h3 class="section-title">Seller</h3>
-            <p style="color: rgba(255, 255, 255, 0.8);">{{ order.post.seller.username }}</p>
-        </div>
+    {% else %}
+    <!-- Simulation Notice -->
+    <div style="background-color: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107; 
+                padding: 15px; margin: 20px 0; border-radius: 5px; text-align: left;">
+        <h4 style="margin-top: 0; color: #ffc107;">🔔 Demo Mode Notice</h4>
+        <p style="margin-bottom: 0;">
+            This application is running in <strong>demo mode</strong>. Order completion and fund transfers are simulated and 
+            do not interact with the actual blockchain. When both parties confirm an order, funds are moved only in the application 
+            database, not on the actual blockchain.
+        </p>
     </div>
-    
-    <!-- Order Timer -->
-    {% if order.status == 'pending' %}
-        <div class="nested-card" style="text-align: center; margin-bottom: 2rem;">
-            <h3 class="nested-card-title">Time Remaining</h3>
-            <div style="color: #28a745; font-weight: bold; font-size: 1.5rem; padding: 1rem;">
-                {{ order.timeline_selected }}
-            </div>
-        </div>
     {% endif %}
-    
-    <!-- Chat Section -->
+
+    <!-- Order Details -->
     <div class="nested-card">
-        <h3 class="nested-card-title">Live Chat</h3>
+        <h3 class="nested-card-title">Order Details</h3>
         
-        <div class="chat-box" id="chat-box">
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="message {% if message.user_id == session['user_id'] %}message-receiver{% else %}message-sender{% endif %}" data-message-id="{{ message.id }}">
-                        <strong>{{ message.user.username }}</strong>
-                        <p>{{ message.content }}</p>
-                        <div class="message-time">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem;">
+            <div style="flex: 1; min-width: 300px;">
+                <h3 class="section-title">Product/Service</h3>
+                <p style="color: rgba(255, 255, 255, 0.9);"><strong style="color: white;">{{ order.post.title }}</strong> ({{ order.post.post_type.capitalize() }})</p>
+                <p style="color: rgba(255, 255, 255, 0.8);">{{ order.post.description or 'No description provided.' }}</p>
+            </div>
+            
+            <div style="flex: 1; min-width: 300px;">
+                <h3 class="section-title">Order Information</h3>
+                <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;">
+                    <strong style="color: white;">Status:</strong> 
+                    <span class="status-tag" style="background-color: 
+                        {% if order.status == 'completed' %}var(--success-color)
+                        {% elif order.status == 'canceled' %}var(--danger-color)
+                        {% elif order.status == 'disputed' %}#f59f00
+                        {% else %}var(--secondary-color){% endif %}">
+                        {{ order.status.capitalize() }}
+                    </span>
+                </p>
+                <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Timeline:</strong> {{ order.timeline_selected }}</p>
+                <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Payment Method:</strong> 
+                    {% if order.post.payment_method == 'other' %}
+                        {{ order.post.custom_payment }}
+                    {% else %}
+                        {{ order.post.payment_method.capitalize() }}
+                    {% endif %}
+                </p>
+                <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 0.5rem;"><strong style="color: white;">Order Date:</strong> {{ order.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+            </div>
+        </div>
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 2rem; margin-bottom: 2rem;">
+            <div style="flex: 1; min-width: 300px;">
+                <h3 class="section-title">Buyer</h3>
+                <p style="color: rgba(255, 255, 255, 0.8);">{{ order.buyer.username }}</p>
+            </div>
+            
+            <div style="flex: 1; min-width: 300px;">
+                <h3 class="section-title">Seller</h3>
+                <p style="color: rgba(255, 255, 255, 0.8);">{{ order.post.seller.username }}</p>
+            </div>
+        </div>
+        
+        <!-- Order Timer -->
+        {% if order.status == 'pending' %}
+            <div class="nested-card" style="text-align: center; margin-bottom: 2rem;">
+                <h3 class="nested-card-title">Time Remaining</h3>
+                <div style="color: #28a745; font-weight: bold; font-size: 1.5rem; padding: 1rem;">
+                    {{ order.timeline_selected }}
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Chat Section -->
+        <div class="nested-card">
+            <h3 class="nested-card-title">Live Chat</h3>
+            
+            <div class="chat-box" id="chat-box">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="message {% if message.user_id == session['user_id'] %}message-receiver{% else %}message-sender{% endif %}" data-message-id="{{ message.id }}">
+                            <strong>{{ message.user.username }}</strong>
+                            <p>{{ message.content }}</p>
+                            <div class="message-time">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);" id="no-messages">No messages yet. Start the conversation!</p>
+                {% endif %}
+            </div>
+            
+            <div id="message-form" class="message-form">
+                <div class="form-group">
+                    <textarea id="message-input" class="form-control" rows="3" placeholder="Type your message here..." required></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button id="send-button" class="btn-view-details">Send Message</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add this section to the chat area -->
+        <div id="message-tools" style="padding: 0.5rem; background-color: rgba(255, 255, 255, 0.05); margin-bottom: 1rem; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <button id="templates-btn" class="btn-secondary btn-sm">
+                    <i class="fas fa-reply" style="margin-right: 0.5rem;"></i> Quick Responses
+                </button>
+                <div>
+                    <span id="typing-indicator" style="display: none; font-size: 0.9rem; font-style: italic; color: var(--secondary-color);">
+                        <i class="fas fa-keyboard" style="margin-right: 0.3rem;"></i> Typing...
+                    </span>
+                </div>
+            </div>
+            
+            <div id="templates-container" style="display: none; background-color: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
+                <h4 style="margin-top: 0; margin-bottom: 1rem; font-size: 1rem;">Quick Response Templates</h4>
+                <div class="templates-grid">
+                    <div class="template-item" data-message="Hi, thank you for your order! I'll get started on it right away.">
+                        <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i> Order Confirmation
                     </div>
-                {% endfor %}
-            {% else %}
-                <p style="text-align: center; padding: 2rem; color: rgba(255, 255, 255, 0.6);" id="no-messages">No messages yet. Start the conversation!</p>
-            {% endif %}
+                    <div class="template-item" data-message="Your order is being processed. I'll keep you updated on the progress.">
+                        <i class="fas fa-spinner" style="margin-right: 0.5rem;"></i> Processing Update
+                    </div>
+                    <div class="template-item" data-message="Your order is ready! How would you like to proceed with delivery/pickup?">
+                        <i class="fas fa-box" style="margin-right: 0.5rem;"></i> Order Ready
+                    </div>
+                    <div class="template-item" data-message="I have a question about your order. Could you please provide more details?">
+                        <i class="fas fa-question-circle" style="margin-right: 0.5rem;"></i> Question
+                    </div>
+                    <div class="template-item" data-message="I've sent you the payment. Please confirm once received.">
+                        <i class="fas fa-money-bill" style="margin-right: 0.5rem;"></i> Payment Sent
+                    </div>
+                    <div class="template-item" data-message="Payment received, thank you!">
+                        <i class="fas fa-money-check" style="margin-right: 0.5rem;"></i> Payment Received
+                    </div>
+                    <div class="template-item" data-message="Your order has been shipped. Here's the tracking information: [Insert tracking number]">
+                        <i class="fas fa-shipping-fast" style="margin-right: 0.5rem;"></i> Shipping Update
+                    </div>
+                    <div class="template-item" data-message="Thank you for choosing my service! Please consider leaving a review.">
+                        <i class="fas fa-star" style="margin-right: 0.5rem;"></i> Thank You
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <div id="message-form" class="message-form">
-            <div class="form-group">
-                <textarea id="message-input" class="form-control" rows="3" placeholder="Type your message here..." required></textarea>
-            </div>
-            <div style="text-align: right;">
-                <button id="send-button" class="btn-view-details">Send Message</button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Add this section to the chat area -->
-    <div id="message-tools" style="padding: 0.5rem; background-color: rgba(255, 255, 255, 0.05); margin-bottom: 1rem; border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-            <button id="templates-btn" class="btn-secondary btn-sm">
-                <i class="fas fa-reply" style="margin-right: 0.5rem;"></i> Quick Responses
-            </button>
-            <div>
-                <span id="typing-indicator" style="display: none; font-size: 0.9rem; font-style: italic; color: var(--secondary-color);">
-                    <i class="fas fa-keyboard" style="margin-right: 0.3rem;"></i> Typing...
+        <!-- Add this to messages in the chat area -->
+        <div class="message-status">
+            <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
+                Delivered
+                <span class="read-receipt" style="margin-left: 0.3rem; color: var(--primary-color);">
+                    <i class="fas fa-check-double"></i> Read
                 </span>
-            </div>
+            </small>
         </div>
         
-        <div id="templates-container" style="display: none; background-color: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; margin-top: 0.5rem;">
-            <h4 style="margin-top: 0; margin-bottom: 1rem; font-size: 1rem;">Quick Response Templates</h4>
-            <div class="templates-grid">
-                <div class="template-item" data-message="Hi, thank you for your order! I'll get started on it right away.">
-                    <i class="fas fa-check-circle" style="margin-right: 0.5rem;"></i> Order Confirmation
-                </div>
-                <div class="template-item" data-message="Your order is being processed. I'll keep you updated on the progress.">
-                    <i class="fas fa-spinner" style="margin-right: 0.5rem;"></i> Processing Update
-                </div>
-                <div class="template-item" data-message="Your order is ready! How would you like to proceed with delivery/pickup?">
-                    <i class="fas fa-box" style="margin-right: 0.5rem;"></i> Order Ready
-                </div>
-                <div class="template-item" data-message="I have a question about your order. Could you please provide more details?">
-                    <i class="fas fa-question-circle" style="margin-right: 0.5rem;"></i> Question
-                </div>
-                <div class="template-item" data-message="I've sent you the payment. Please confirm once received.">
-                    <i class="fas fa-money-bill" style="margin-right: 0.5rem;"></i> Payment Sent
-                </div>
-                <div class="template-item" data-message="Payment received, thank you!">
-                    <i class="fas fa-money-check" style="margin-right: 0.5rem;"></i> Payment Received
-                </div>
-                <div class="template-item" data-message="Your order has been shipped. Here's the tracking information: [Insert tracking number]">
-                    <i class="fas fa-shipping-fast" style="margin-right: 0.5rem;"></i> Shipping Update
-                </div>
-                <div class="template-item" data-message="Thank you for choosing my service! Please consider leaving a review.">
-                    <i class="fas fa-star" style="margin-right: 0.5rem;"></i> Thank You
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Add this to messages in the chat area -->
-    <div class="message-status">
-        <small style="color: rgba(255, 255, 255, 0.6); font-size: 0.8rem;">
-            Delivered
-            <span class="read-receipt" style="margin-left: 0.3rem; color: var(--primary-color);">
-                <i class="fas fa-check-double"></i> Read
-            </span>
-        </small>
-    </div>
-    
-    <!-- Order Actions -->
-    <div class="nested-card" style="margin-top: 2rem;">
-        <h3 class="nested-card-title">Order Actions</h3>
-        
-        <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
-            {% if order.status == 'pending' %}
-                {% if session['user_id'] == order.post.seller_id %}
-                    <a href="{{ url_for('update_order_status', order_id=order.id) }}?status=seller_confirmed" 
-                       style="background-color: #28a745; color: white; padding: 12px 24px; 
-                              border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
-                              text-decoration: none; display: inline-block; text-align: center;">
-                        {% if order.seller_confirmed %}
-                            Waiting for Buyer
-                        {% else %}
-                            Mark as Completed
-                        {% endif %}
-                    </a>
-                {% elif session['user_id'] == order.buyer_id %}
-                    <a href="{{ url_for('update_order_status', order_id=order.id) }}?status=buyer_confirmed" 
-                       style="background-color: #28a745; color: white; padding: 12px 24px; 
-                              border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
-                              text-decoration: none; display: inline-block; text-align: center;">
+        <!-- Order Actions -->
+        <div class="nested-card" style="margin-top: 2rem;">
+            <h3 class="nested-card-title">Order Actions</h3>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center;">
+                {% if order.status == 'pending' %}
+                    {% if session['user_id'] == order.post.seller_id %}
                         {% if order.buyer_confirmed %}
-                            Waiting for Seller
+                            <a href="{{ url_for('update_order_status', order_id=order.id) }}?status=seller_confirmed" 
+                               style="background-color: #28a745; color: white; padding: 12px 24px; 
+                                      border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+                                      text-decoration: none; display: inline-block; text-align: center;">
+                                {% if order.seller_confirmed %}
+                                    Waiting for Completion
+                                {% else %}
+                                    Confirm & Complete Order
+                                {% endif %}
+                            </a>
                         {% else %}
-                            Mark as Completed
+                            <div style="background-color: rgba(255, 255, 255, 0.1); padding: 12px 24px; 
+                                        border: none; border-radius: 5px; color: #aaa; 
+                                        text-align: center; font-weight: bold;">
+                                Waiting for Buyer Confirmation
+                            </div>
                         {% endif %}
+                    {% elif session['user_id'] == order.buyer_id %}
+                        <a href="{{ url_for('update_order_status', order_id=order.id) }}?status=buyer_confirmed" 
+                           style="background-color: #28a745; color: white; padding: 12px 24px; 
+                                  border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+                                  text-decoration: none; display: inline-block; text-align: center;">
+                            {% if order.buyer_confirmed %}
+                                Waiting for Seller
+                            {% else %}
+                                Mark as Completed
+                            {% endif %}
+                        </a>
+                    {% endif %}
+                    
+                    <!-- Order Confirmation Status -->
+                    <div style="background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 5px; width: 100%; 
+                                margin-top: 15px; text-align: center;">
+                        <p style="margin: 0; color: white;">
+                            <strong>Order Completion Status:</strong><br>
+                            Buyer: 
+                            {% if order.buyer_confirmed %}
+                                <span style="color: #28a745;">✓ Confirmed</span>
+                            {% else %}
+                                <span style="color: #dc3545;">Pending</span>
+                            {% endif %}
+                            &nbsp;&nbsp;|&nbsp;&nbsp;
+                            Seller: 
+                            {% if order.seller_confirmed %}
+                                <span style="color: #28a745;">✓ Confirmed</span>
+                            {% else %}
+                                <span style="color: #dc3545;">Pending</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    <a href="{{ url_for('update_order_status', order_id=order.id) }}?status=canceled" 
+                       style="background-color: #dc3545; color: white; padding: 12px 24px; 
+                              border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
+                              text-decoration: none; display: inline-block; text-align: center;">
+                        Cancel Order
                     </a>
                 {% endif %}
                 
-                <!-- Order Confirmation Status -->
-                <div style="background-color: rgba(255, 255, 255, 0.1); padding: 10px; border-radius: 5px; width: 100%; 
-                            margin-top: 15px; text-align: center;">
-                    <p style="margin: 0; color: white;">
-                        <strong>Order Completion Status:</strong><br>
-                        Buyer: 
-                        {% if order.buyer_confirmed %}
-                            <span style="color: #28a745;">✓ Confirmed</span>
-                        {% else %}
-                            <span style="color: #dc3545;">Pending</span>
-                        {% endif %}
-                        &nbsp;&nbsp;|&nbsp;&nbsp;
-                        Seller: 
-                        {% if order.seller_confirmed %}
-                            <span style="color: #28a745;">✓ Confirmed</span>
-                        {% else %}
-                            <span style="color: #dc3545;">Pending</span>
-                        {% endif %}
-                    </p>
-                </div>
-                
-                <a href="{{ url_for('update_order_status', order_id=order.id) }}?status=canceled" 
-                   style="background-color: #dc3545; color: white; padding: 12px 24px; 
-                          border: none; border-radius: 5px; cursor: pointer; font-weight: bold;
-                          text-decoration: none; display: inline-block; text-align: center;">
-                    Cancel Order
-                </a>
-            {% endif %}
-            
-            <button type="button" onclick="document.getElementById('complaint-form').style.display='block';" 
-                    style="background-color: rgba(255, 255, 255, 0.1); color: white; padding: 12px 24px; 
-                           border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                File a Complaint
-            </button>
+                <button type="button" onclick="document.getElementById('complaint-form').style.display='block';" 
+                        style="background-color: rgba(255, 255, 255, 0.1); color: white; padding: 12px 24px; 
+                               border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                    File a Complaint
+                </button>
+            </div>
         </div>
-    </div>
-    
-    <!-- Complaint Form (Initially Hidden) -->
-    <div id="complaint-form" class="nested-card" style="margin-top: 2rem; display: none;">
-        <h3 class="nested-card-title">File a Complaint</h3>
         
-        <form method="POST" action="{{ url_for('file_complaint', order_id=order.id) }}">
-            <div class="form-group">
-                <label for="complaint-content" class="form-label">Describe your issue</label>
-                <textarea id="complaint-content" name="content" class="form-control" rows="4" required></textarea>
-            </div>
-            <div style="text-align: right;">
-                <button type="submit" class="btn-danger">Submit Complaint</button>
-            </div>
-        </form>
+        <!-- Complaint Form (Initially Hidden) -->
+        <div id="complaint-form" class="nested-card" style="margin-top: 2rem; display: none;">
+            <h3 class="nested-card-title">File a Complaint</h3>
+            
+            <form method="POST" action="{{ url_for('file_complaint', order_id=order.id) }}">
+                <div class="form-group">
+                    <label for="complaint-content" class="form-label">Describe your issue</label>
+                    <textarea id="complaint-content" name="content" class="form-control" rows="4" required></textarea>
+                </div>
+                <div style="text-align: right;">
+                    <button type="submit" class="btn-danger">Submit Complaint</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 

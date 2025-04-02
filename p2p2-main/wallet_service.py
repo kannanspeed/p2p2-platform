@@ -2,6 +2,8 @@ import os
 import json
 import random
 import string
+import time
+import threading
 from dotenv import load_dotenv
 from web3 import Web3
 from eth_account import Account
@@ -10,6 +12,9 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives import hashes
 import base64
+from decimal import Decimal
+from models import Wallet, Transaction, db
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -44,6 +49,19 @@ w3 = Web3(Web3.HTTPProvider(BSC_RPC_URL))
 
 # USDT token contract
 usdt_contract = w3.eth.contract(address=Web3.to_checksum_address(USDT_CONTRACT_ADDRESS), abi=USDT_ABI)
+
+# Web3 configuration for BEP-20 USDT (Binance Smart Chain)
+BLOCKCHAIN_PROVIDER = os.environ.get('BLOCKCHAIN_PROVIDER', 'https://bsc-dataseed.binance.org/')
+WEB3_PROVIDER = Web3(Web3.HTTPProvider(BLOCKCHAIN_PROVIDER))
+CHAIN_ID = 56  # Binance Smart Chain Mainnet (Use 97 for testnet)
+
+# Platform admin wallet for fees and escrow
+PLATFORM_WALLET_ADDRESS = "0x1234567890123456789012345678901234567890"  # CHANGE THIS TO YOUR PLATFORM WALLET
+PLATFORM_PRIVATE_KEY = os.environ.get("PLATFORM_PRIVATE_KEY", "")  # Get this from environment variable
+
+# Gas settings
+GAS_LIMIT = 100000
+GAS_PRICE = WEB3_PROVIDER.to_wei('5', 'gwei')  # Adjust based on network conditions
 
 class WalletService:
     def __init__(self, app):
@@ -170,4 +188,265 @@ class WalletService:
             }
         except Exception as e:
             print(f"Error checking transaction status: {e}")
-            return {'status': 'unknown', 'error': str(e)} 
+            return {'status': 'unknown', 'error': str(e)}
+
+def is_connected():
+    """Check if connected to blockchain network"""
+    return WEB3_PROVIDER.is_connected()
+
+def get_wallet_balance(address):
+    """Get real USDT balance from blockchain"""
+    if not WEB3_PROVIDER.is_address(address):
+        return Decimal('0')
+    
+    try:
+        balance_wei = usdt_contract.functions.balanceOf(address).call()
+        decimals = usdt_contract.functions.decimals().call()
+        balance = Decimal(balance_wei) / Decimal(10 ** decimals)
+        return balance
+    except Exception as e:
+        print(f"Error getting balance for {address}: {e}")
+        return Decimal('0')
+
+def update_wallet_balance(wallet_id):
+    """Update database wallet balance with actual blockchain balance"""
+    with db.app.app_context():
+        wallet = Wallet.query.get(wallet_id)
+        if wallet and wallet.address:
+            real_balance = get_wallet_balance(wallet.address)
+            wallet.balance = str(real_balance)
+            db.session.commit()
+            return real_balance
+        return None
+
+def send_usdt(from_address, to_address, amount, private_key):
+    """Send USDT from one address to another using private key"""
+    if not WEB3_PROVIDER.is_connected():
+        raise Exception("Not connected to blockchain network")
+    
+    if not WEB3_PROVIDER.is_address(from_address) or not WEB3_PROVIDER.is_address(to_address):
+        raise Exception("Invalid wallet addresses")
+    
+    try:
+        # Convert amount to wei (consider USDT decimals)
+        decimals = usdt_contract.functions.decimals().call()
+        amount_wei = int(Decimal(amount) * Decimal(10 ** decimals))
+        
+        # Check sender balance
+        balance = usdt_contract.functions.balanceOf(from_address).call()
+        if balance < amount_wei:
+            raise Exception("Insufficient balance for transfer")
+            
+        # Create transaction
+        nonce = WEB3_PROVIDER.eth.get_transaction_count(from_address)
+        
+        # Build transaction for token transfer
+        txn = usdt_contract.functions.transfer(
+            to_address, 
+            amount_wei
+        ).build_transaction({
+            'chainId': CHAIN_ID,
+            'gas': GAS_LIMIT,
+            'gasPrice': GAS_PRICE,
+            'nonce': nonce,
+        })
+        
+        # Sign transaction
+        signed_txn = WEB3_PROVIDER.eth.account.sign_transaction(txn, private_key)
+        
+        # Send transaction
+        tx_hash = WEB3_PROVIDER.eth.send_raw_transaction(signed_txn.rawTransaction)
+        
+        # Wait for transaction receipt
+        tx_receipt = WEB3_PROVIDER.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+        
+        if tx_receipt.status == 1:
+            # Transaction successful
+            return {
+                'success': True,
+                'tx_hash': tx_hash.hex(),
+                'block_number': tx_receipt.blockNumber
+            }
+        else:
+            raise Exception("Transaction failed")
+            
+    except Exception as e:
+        raise Exception(f"Error sending USDT: {str(e)}")
+
+def complete_order_blockchain(order, buyer_wallet, seller_wallet):
+    """
+    Execute actual blockchain transfer for an order
+    
+    This function should be called when both parties confirm an order
+    It transfers the agreed amount from buyer to seller
+    """
+    from app import get_app_config
+    
+    # Get amount from order
+    try:
+        # Parse the amount from order post description
+        if "USDT Quantity:" in order.post.description:
+            quantity_text = order.post.description.split("USDT Quantity:")[1].split(",")[0].strip()
+            amount = Decimal(quantity_text)
+        else:
+            amount = Decimal('1.0')  # Default fallback
+        
+        # Add platform fee (e.g., 1%)
+        platform_fee = amount * Decimal('0.01')
+        
+        # First transfer platform fee to platform wallet
+        if get_app_config('USE_REAL_BLOCKCHAIN') == 'True':
+            # Get buyer's private key (this would be securely stored/retrieved in production)
+            # For demo, we'd use an environment variable or secure storage
+            buyer_private_key = os.environ.get(f"WALLET_KEY_{buyer_wallet.id}", "")
+            
+            if not buyer_private_key:
+                raise Exception("Buyer private key not available")
+            
+            # Transfer fee to platform
+            fee_result = send_usdt(
+                buyer_wallet.address,
+                PLATFORM_WALLET_ADDRESS,
+                str(platform_fee),
+                buyer_private_key
+            )
+            
+            # Transfer main amount to seller
+            transfer_result = send_usdt(
+                buyer_wallet.address,
+                seller_wallet.address,
+                str(amount - platform_fee),
+                buyer_private_key
+            )
+            
+            # Record transactions in database
+            with db.app.app_context():
+                # Record fee transaction
+                fee_tx = Transaction(
+                    wallet_id=buyer_wallet.id,
+                    tx_hash=fee_result['tx_hash'],
+                    amount=str(platform_fee),
+                    tx_type="fee",
+                    status="completed",
+                    to_address=PLATFORM_WALLET_ADDRESS,
+                    block_number=fee_result['block_number']
+                )
+                db.session.add(fee_tx)
+                
+                # Record main transaction to seller
+                seller_amount = amount - platform_fee
+                main_tx = Transaction(
+                    wallet_id=buyer_wallet.id,
+                    tx_hash=transfer_result['tx_hash'],
+                    amount=str(seller_amount),
+                    tx_type="send",
+                    status="completed",
+                    to_address=seller_wallet.address,
+                    block_number=transfer_result['block_number']
+                )
+                db.session.add(main_tx)
+                
+                # Record receipt transaction for seller
+                receive_tx = Transaction(
+                    wallet_id=seller_wallet.id,
+                    tx_hash=transfer_result['tx_hash'],
+                    amount=str(seller_amount),
+                    tx_type="receive",
+                    status="completed",
+                    from_address=buyer_wallet.address,
+                    block_number=transfer_result['block_number']
+                )
+                db.session.add(receive_tx)
+                
+                # Update wallet balances from blockchain
+                update_wallet_balance(buyer_wallet.id)
+                update_wallet_balance(seller_wallet.id)
+                
+                db.session.commit()
+            
+            return {
+                'success': True,
+                'tx_hash': transfer_result['tx_hash'],
+                'fee_tx_hash': fee_result['tx_hash']
+            }
+        else:
+            # Simulated transaction in demo mode
+            # Just update database balances
+            with db.app.app_context():
+                # Deduct from buyer
+                buyer_wallet.balance = str(Decimal(buyer_wallet.balance) - amount)
+                
+                # Add to seller
+                seller_wallet.balance = str(Decimal(seller_wallet.balance) + amount)
+                
+                # Create transaction records
+                tx_hash = f"simulated-{order.id}-{datetime.utcnow().timestamp()}"
+                
+                # Create transaction record
+                transaction = Transaction(
+                    wallet_id=buyer_wallet.id,
+                    tx_hash=f"{tx_hash}-send",
+                    amount=str(amount),
+                    tx_type="send",
+                    status="completed",
+                    to_address=seller_wallet.address
+                )
+                db.session.add(transaction)
+                
+                # Create corresponding transaction for seller
+                seller_transaction = Transaction(
+                    wallet_id=seller_wallet.id,
+                    tx_hash=f"{tx_hash}-receive",
+                    amount=str(amount),
+                    tx_type="receive",
+                    status="completed",
+                    from_address=buyer_wallet.address
+                )
+                db.session.add(seller_transaction)
+                
+                db.session.commit()
+            
+            return {
+                'success': True,
+                'tx_hash': tx_hash,
+                'simulated': True
+            }
+    except Exception as e:
+        raise Exception(f"Error completing order on blockchain: {str(e)}")
+
+# Wallet monitoring thread
+stop_monitoring_flag = threading.Event()
+
+def monitor_wallets():
+    """Periodically check and update wallet balances from blockchain"""
+    while not stop_monitoring_flag.is_set():
+        try:
+            with db.app.app_context():
+                wallets = Wallet.query.all()
+                for wallet in wallets:
+                    if wallet.address:
+                        update_wallet_balance(wallet.id)
+        except Exception as e:
+            print(f"Error in wallet monitoring: {str(e)}")
+        
+        # Check every 60 seconds
+        time.sleep(60)
+
+monitoring_thread = None
+
+def start_monitoring():
+    """Start the wallet monitoring thread"""
+    global monitoring_thread
+    if monitoring_thread is None or not monitoring_thread.is_alive():
+        stop_monitoring_flag.clear()
+        monitoring_thread = threading.Thread(target=monitor_wallets)
+        monitoring_thread.daemon = True
+        monitoring_thread.start()
+        print("Wallet monitoring started")
+
+def stop_monitoring():
+    """Stop the wallet monitoring thread"""
+    stop_monitoring_flag.set()
+    if monitoring_thread and monitoring_thread.is_alive():
+        monitoring_thread.join(timeout=2.0)
+        print("Wallet monitoring stopped") 

@@ -1,154 +1,140 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="dashboard-card">
-    <h2 class="dashboard-title">USDT Wallet (BEP20)</h2>
-    
-    <div class="wallet-overview">
-        <div class="wallet-balance nested-card">
-            <h3 class="section-title">Balance</h3>
-            <div class="balance-amount">{{ wallet.balance }} USDT</div>
-            <div class="address-box" style="margin-top: 1.5rem;">
-                <span class="address-label" style="color: rgba(255, 255, 255, 0.7); display: block; margin-bottom: 0.5rem;">Wallet Address:</span>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <code class="wallet-address" style="flex: 1; overflow: auto; color: white; background-color: rgba(255, 255, 255, 0.05); padding: 0.5rem; border-radius: 8px;">{{ wallet.address }}</code>
-                    <button class="btn-secondary" style="padding: 0.6rem 1rem;" data-clipboard-text="{{ wallet.address }}">
-                        <i class="fas fa-copy"></i> Copy
-                    </button>
+<div class="container">
+    <div class="wallet-container">
+        <h1>USDT Wallet (BEP20)</h1>
+        
+        {% if config.USE_REAL_BLOCKCHAIN == 'True' %}
+        <!-- Production Mode Notice -->
+        <div style="background-color: rgba(40, 167, 69, 0.2); border-left: 4px solid #28a745; 
+                    padding: 15px; margin: 20px 0; border-radius: 5px; text-align: left;">
+            <h4 style="margin-top: 0; color: #28a745;">🔒 Production Mode - Real Blockchain Transactions</h4>
+            <p style="margin-bottom: 0;">
+                This wallet is operating in <strong>production mode</strong>. All transactions interact with the actual blockchain network.
+                Real funds are being transferred when you complete transactions. Please ensure you have enough BNB for gas fees.
+            </p>
+        </div>
+        {% else %}
+        <!-- Simulation Notice -->
+        <div style="background-color: rgba(255, 193, 7, 0.2); border-left: 4px solid #ffc107; 
+                    padding: 15px; margin: 20px 0; border-radius: 5px; text-align: left;">
+            <h4 style="margin-top: 0; color: #ffc107;">🔔 Demo Mode - Simulated Transactions</h4>
+            <p style="margin-bottom: 0;">
+                This wallet is operating in <strong>demo mode</strong>. All transactions are simulated and do not interact with the actual blockchain.
+                Real funds are not being transferred. Balance updates are stored in the application database only.
+            </p>
+        </div>
+        {% endif %}
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Balance</h2>
+                    </div>
+                    <div class="card-body">
+                        <h1 class="balance">{{ wallet.balance }} USDT</h1>
+                        <div class="wallet-address">
+                            <p>Wallet Address:</p>
+                            <div class="address-container">
+                                <span id="wallet-address">{{ wallet.address }}</span>
+                                <button onclick="copyToClipboard()" class="btn btn-sm btn-outline-primary">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Actions</h2>
+                    </div>
+                    <div class="card-body">
+                        <a href="{{ url_for('send_usdt') }}" class="btn btn-primary btn-block">
+                            <i class="fas fa-paper-plane"></i> Send USDT
+                        </a>
+                        <a href="{{ url_for('receive_usdt') }}" class="btn btn-success btn-block">
+                            <i class="fas fa-qrcode"></i> Receive USDT
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <div class="wallet-actions nested-card" style="display: flex; flex-direction: column; justify-content: center; gap: 1.5rem;">
-            <h3 class="section-title">Actions</h3>
-            <a href="{{ url_for('send_usdt') }}" class="btn-view-details" style="text-align: center;">
-                <i class="fas fa-paper-plane" style="margin-right: 0.5rem;"></i> Send USDT
-            </a>
-            <a href="{{ url_for('receive_usdt') }}" class="btn-success" style="text-align: center;">
-                <i class="fas fa-qrcode" style="margin-right: 0.5rem;"></i> Receive USDT
-            </a>
-        </div>
-    </div>
-    
-    <div class="nested-card" style="margin-top: 2rem;">
-        <h3 class="section-title">Recent Transactions</h3>
-        
-        {% if transactions %}
-            <div class="transaction-list">
-                {% for tx in transactions %}
-                    <div class="transaction-item" data-tx-hash="{{ tx.tx_hash }}">
-                        <div class="transaction-icon">
-                            {% if tx.tx_type == 'send' %}
-                                <i class="fas fa-arrow-right tx-send"></i>
-                            {% else %}
-                                <i class="fas fa-arrow-left tx-receive"></i>
-                            {% endif %}
-                        </div>
-                        <div class="transaction-details">
-                            <div class="transaction-info" style="color: rgba(255, 255, 255, 0.8);">
-                                {% if tx.tx_type == 'send' %}
-                                    <span>Sent to: </span>
-                                    <code class="address-short" style="background-color: rgba(255, 255, 255, 0.05); padding: 0.2rem 0.5rem; border-radius: 4px;">{{ tx.to_address[:8] }}...{{ tx.to_address[-6:] }}</code>
-                                {% else %}
-                                    <span>Received from: </span>
-                                    <code class="address-short" style="background-color: rgba(255, 255, 255, 0.05); padding: 0.2rem 0.5rem; border-radius: 4px;">{{ tx.from_address[:8] }}...{{ tx.from_address[-6:] }}</code>
+        <div class="card mt-4">
+            <div class="card-header">
+                <h2>Recent Transactions</h2>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                    <div class="transaction-list">
+                        {% for tx in transactions %}
+                            <div class="transaction-item">
+                                <div class="transaction-icon">
+                                    {% if tx.tx_type == 'receive' %}
+                                        <i class="fas fa-arrow-down receive-icon"></i>
+                                    {% elif tx.tx_type == 'send' %}
+                                        <i class="fas fa-arrow-up send-icon"></i>
+                                    {% else %}
+                                        <i class="fas fa-exchange-alt"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="transaction-details">
+                                    {% if tx.tx_type == 'receive' %}
+                                        <div class="transaction-title">Received from: 
+                                            <span class="address-truncate">{{ tx.from_address }}</span>
+                                        </div>
+                                    {% elif tx.tx_type == 'send' %}
+                                        <div class="transaction-title">Sent to: 
+                                            <span class="address-truncate">{{ tx.to_address }}</span>
+                                        </div>
+                                    {% elif tx.tx_type == 'boost' %}
+                                        <div class="transaction-title">Listing Boost Payment</div>
+                                    {% endif %}
+                                    <div class="transaction-status">
+                                        <span class="status-badge status-{{ tx.status }}">{{ tx.status | title }}</span>
+                                    </div>
+                                </div>
+                                <div class="transaction-amount {% if tx.tx_type == 'receive' %}positive{% elif tx.tx_type == 'send' %}negative{% endif %}">
+                                    {% if tx.tx_type == 'receive' %}+{% elif tx.tx_type == 'send' %}-{% endif %}{{ tx.amount }} USDT
+                                </div>
+                                <div class="transaction-date">
+                                    {{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                                
+                                {% if config.USE_REAL_BLOCKCHAIN == 'True' and tx.tx_hash and not tx.tx_hash.startswith('simulated') and not tx.block_number %}
+                                <div class="blockchain-link" style="margin-top: 5px; font-size: 0.8rem;">
+                                    <a href="https://bscscan.com/tx/{{ tx.tx_hash }}" target="_blank" style="color: #007bff;">
+                                        View on BscScan <i class="fas fa-external-link-alt"></i>
+                                    </a>
+                                </div>
                                 {% endif %}
                             </div>
-                            <div class="status-tag" style="background-color: 
-                                {% if tx.status == 'completed' %}var(--success-color)
-                                {% elif tx.status == 'failed' %}var(--danger-color)
-                                {% else %}var(--secondary-color){% endif %}">
-                                {{ tx.status.capitalize() }}
-                            </div>
-                        </div>
-                        <div class="transaction-amount">
-                            {% if tx.tx_type == 'send' %}
-                                <span class="amount-send">-{{ tx.amount }} USDT</span>
-                            {% else %}
-                                <span class="amount-receive">+{{ tx.amount }} USDT</span>
-                            {% endif %}
-                            <div class="transaction-time">
-                                {{ tx.created_at.strftime('%Y-%m-%d %H:%M') }}
-                            </div>
-                        </div>
+                        {% endfor %}
                     </div>
-                {% endfor %}
+                {% else %}
+                    <p class="text-center">No transactions yet.</p>
+                {% endif %}
             </div>
-        {% else %}
-            <div class="empty-state">
-                <i class="fas fa-exchange-alt"></i>
-                <p>No transactions yet.</p>
-                <p style="color: rgba(255, 255, 255, 0.6);">Your transaction history will appear here.</p>
-            </div>
-        {% endif %}
+        </div>
     </div>
 </div>
+{% endblock %}
 
-<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js"></script>
+{% block scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize clipboard.js
-        new ClipboardJS('.btn-secondary');
+    function copyToClipboard() {
+        var copyText = document.getElementById("wallet-address");
+        var textArea = document.createElement("textarea");
+        textArea.value = copyText.textContent;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("Copy");
+        textArea.remove();
         
-        // Add copy button functionality
-        const copyBtn = document.querySelector('.btn-secondary');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', function() {
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
-                
-                setTimeout(function() {
-                    copyBtn.innerHTML = originalText;
-                }, 2000);
-            });
-        }
-        
-        // Check pending transaction status
-        const pendingTxs = document.querySelectorAll('.transaction-item .status-tag:contains("Pending")');
-        
-        function updateTransactionStatus(txElement) {
-            try {
-                const txHash = txElement.closest('.transaction-item').dataset.txHash;
-                
-                fetch('/api/check_transaction/' + txHash)
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.status && data.status !== 'pending') {
-                            txElement.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
-                            txElement.classList.remove('pending');
-                            
-                            // Update background color based on status
-                            if (data.status === 'completed') {
-                                txElement.style.backgroundColor = 'var(--success-color)';
-                            } else if (data.status === 'failed') {
-                                txElement.style.backgroundColor = 'var(--danger-color)';
-                            }
-                        }
-                    })
-                    .catch(error => console.error('Error checking tx status:', error));
-            } catch (e) {
-                console.error('Error updating transaction:', e);
-            }
-        }
-        
-        // Check all pending transactions
-        if (pendingTxs.length > 0) {
-            pendingTxs.forEach(tx => {
-                updateTransactionStatus(tx);
-                
-                // Periodically check pending transactions
-                setInterval(() => {
-                    if (tx.textContent.toLowerCase().includes('pending')) {
-                        updateTransactionStatus(tx);
-                    }
-                }, 15000); // Check every 15 seconds
-            });
-        }
-    });
+        // Show copied message
+        alert("Address copied to clipboard!");
+    }
 </script>
 {% endblock %} 
